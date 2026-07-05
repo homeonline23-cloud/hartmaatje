@@ -1,0 +1,17 @@
+# Supabase config voor AI Chat Partner (alleen nodig als je de CLI gebruikt).
+# In het dashboard hoef je dit niet te lezen.
+
+project_id = "ai-chat-partner"
+
+[functions.chat]
+verify_jwt = true
+
+[functions.transcribe]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+# retention-sweep wordt door een cron/secret aangeroepen, niet door een ingelogde gebruiker.
+[functions.retention-sweep]
+verify_jwt = false
