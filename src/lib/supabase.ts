@@ -24,19 +24,26 @@ export function getSupabase(): SupabaseClient | null {
 }
 
 /** Voorkomt oneindig wachten als Supabase offline of gepauzeerd is. */
+export async function withSupabaseTimeout<T>(
+  promise: PromiseLike<T>,
+  timeoutMs: number,
+): Promise<T | null> {
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+  } catch {
+    return null;
+  }
+}
+
 export async function getAuthSession(
   client: SupabaseClient,
   timeoutMs = 2500,
 ): Promise<Session | null> {
-  try {
-    const { data } = await Promise.race([
-      client.auth.getSession(),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error("supabase-timeout")), timeoutMs);
-      }),
-    ]);
-    return data.session ?? null;
-  } catch {
-    return null;
-  }
+  const result = await withSupabaseTimeout(client.auth.getSession(), timeoutMs);
+  return result?.data.session ?? null;
 }

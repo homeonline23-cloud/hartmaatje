@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { getSupabase } from "@/lib/supabase";
 import { AppPagePanel } from "@/components/AppPagePanel";
 import { Card, ErrorBanner, PrimaryButton, TextField } from "@/components/ui";
@@ -15,6 +16,9 @@ type MemoryFact = {
 
 export default function GeheugenPage() {
   const { session } = useAuth();
+  const { app } = useLanguage();
+  const copy = app.memory;
+
   const [facts, setFacts] = useState<MemoryFact[]>([]);
   const [busy, setBusy] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
@@ -54,12 +58,12 @@ export default function GeheugenPage() {
     const body = draftBody.trim();
     setError(null);
     if (!body) {
-      setError("Schrijft u alstublieft wat ik mag onthouden.");
+      setError(copy.bodyRequired);
       return;
     }
     const db = getSupabase();
     if (!db || !session?.user?.id) {
-      setError("Geheugen komt later — nu kunt u gewoon chatten via Gesprek.");
+      setError(copy.loginRequired);
       return;
     }
     const titleTrim = draftTitle.trim() === "" ? null : draftTitle.trim();
@@ -84,11 +88,11 @@ export default function GeheugenPage() {
   };
 
   const onDelete = async (row: MemoryFact) => {
-    if (
-      !window.confirm(
-        `"${(row.title ? `${row.title}: ` : "") + row.body}".slice(0, 80) wordt gewist. Doorgaan?`,
-      )
-    ) {
+    const preview = ((row.title ? `${row.title}: ` : "") + row.body).slice(
+      0,
+      80,
+    );
+    if (!window.confirm(copy.deleteConfirm(preview))) {
       return;
     }
     const db = getSupabase();
@@ -103,40 +107,37 @@ export default function GeheugenPage() {
   };
 
   return (
-    <AppPagePanel
-      title="Geheugen"
-      intro="Hier bepaalt u wat HartMaatje van u mag onthouden. Zo voelen gesprekken vertrouwder aan. U kunt alles rustig aanpassen of wissen wanneer u wilt."
-    >
+    <AppPagePanel title={copy.title} intro={copy.intro}>
       <Card>
-        <h2 className="mb-3 text-xl font-semibold text-[#2c2416]">
-          {editId ? "Herinnering wijzigen" : "Nieuwe herinnering"}
+        <h2 className="mb-3 text-2xl font-semibold text-[#2c2416] sm:text-3xl">
+          {editId ? copy.editHeading : copy.newHeading}
         </h2>
         <div className="space-y-4">
           <TextField
-            label="Onderwerp (optioneel, bijv. Familie)"
+            label={copy.subjectLabel}
             value={draftTitle}
             onChange={setDraftTitle}
           />
           <label className="block">
-            <span className="mb-1 block text-lg font-medium text-[#2c2416]">
-              Wat wilt u dat HartMaatje onthouden mag?
+            <span className="mb-1 block text-xl font-medium text-[#2c2416] sm:text-2xl">
+              {copy.bodyLabel}
             </span>
             <textarea
               value={draftBody}
               onChange={(e) => setDraftBody(e.target.value)}
               rows={4}
-              className="w-full resize-none rounded-2xl border-2 border-[#d8ccb8] bg-white px-4 py-3 text-lg text-[#2c2416] focus:border-[#4a6741] focus:outline-none"
+              className="w-full resize-none rounded-2xl border-2 border-[#d8ccb8] bg-white px-4 py-3.5 text-xl text-[#2c2416] focus:border-[#4a6741] focus:outline-none sm:text-2xl"
             />
           </label>
           <ErrorBanner message={error} />
           <PrimaryButton
-            label={busy ? "Bezig…" : editId ? "Wijziging opslaan" : "Toevoegen"}
+            label={busy ? copy.saving : editId ? copy.saveEdit : copy.add}
             disabled={busy}
             onClick={() => void onSaveDraft()}
           />
           {editId ? (
             <PrimaryButton
-              label="Annuleer bewerking"
+              label={copy.cancelEdit}
               variant="outline"
               onClick={cancelEdit}
               disabled={busy}
@@ -147,15 +148,12 @@ export default function GeheugenPage() {
 
       <div>
         <h2 className="mb-3 text-xl font-semibold text-[#2c2416] sm:text-2xl">
-          Wat er nu wordt meegenomen ({facts.length})
+          {copy.listHeading(facts.length)}
         </h2>
         {loadingList ? (
-          <p className="text-lg text-[#5c4a32] sm:text-xl">Laden…</p>
+          <p className="text-xl text-[#5c4a32] sm:text-2xl">{copy.loading}</p>
         ) : facts.length === 0 ? (
-          <p className="text-lg text-[#5c4a32] sm:text-xl">
-            U heeft nog niets toegevoegd. Schrijf hierboven iets op, zodat
-            HartMaatje u beter leert kennen.
-          </p>
+          <p className="text-xl text-[#5c4a32] sm:text-2xl">{copy.empty}</p>
         ) : (
           <div className="space-y-3">
             {facts.map((item) => (
@@ -166,7 +164,9 @@ export default function GeheugenPage() {
                 {item.title ? (
                   <p className="font-bold text-[#4a6741]">{item.title}</p>
                 ) : null}
-                <p className="mt-1 text-lg text-[#2c2416]">{item.body}</p>
+                <p className="mt-1 text-xl text-[#2c2416] sm:text-2xl">
+                  {item.body}
+                </p>
                 <div className="mt-3 flex gap-2">
                   <button
                     type="button"
@@ -177,14 +177,14 @@ export default function GeheugenPage() {
                     }}
                     className="rounded-lg border-2 border-[#d8ccb8] px-4 py-2 font-medium text-[#4a6741]"
                   >
-                    Wijzig
+                    {copy.edit}
                   </button>
                   <button
                     type="button"
                     onClick={() => void onDelete(item)}
                     className="rounded-lg border-2 border-red-300 px-4 py-2 font-medium text-red-700"
                   >
-                    Wissen
+                    {copy.delete}
                   </button>
                 </div>
               </div>

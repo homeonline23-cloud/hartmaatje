@@ -1,14 +1,10 @@
 import { getSupabase, getAuthSession } from "@/lib/supabase";
+import { getAppCopy, getVoiceTypingFallback, isVoiceTypingFallback } from "@/lib/appLocale";
+import { DEFAULT_APP_LANG, type AppLang } from "@/lib/languages";
+
+export { isVoiceTypingFallback, getVoiceTypingFallback };
 
 type Out = { text?: string; error?: string };
-
-/** Alleen in het verborgen nood-paneel als spraak (nog) niet beschikbaar is. */
-export const VOICE_TYPING_FALLBACK =
-  "Praten komt straks volledig online. Schrijf kort wat u wilt delen.";
-
-export function isVoiceTypingFallback(error: string): boolean {
-  return error.trim() === VOICE_TYPING_FALLBACK;
-}
 
 async function blobToBase64(blob: Blob): Promise<string> {
   const buf = await blob.arrayBuffer();
@@ -21,20 +17,57 @@ async function blobToBase64(blob: Blob): Promise<string> {
   return btoa(binary);
 }
 
-/** Stuurt korte browser-opnames (webm/mp4) naar Whisper via de Edge Function. */
+async function transcribeViaGuestApi(
+  blob: Blob,
+  lang: AppLang,
+): Promise<Out> {
+  const errors = getAppCopy(lang).errors;
+  const b64 = await blobToBase64(blob).catch(() => "");
+  if (!b64) return { error: errors.couldNotReadRecording };
+
+  const mime = blob.type?.startsWith("audio")
+    ? blob.type
+    : blob.type || "audio/webm";
+
+  try {
+    const res = await fetch("/api/transcribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audio_base64: b64,
+        mime_type: mime,
+        lang,
+      }),
+    });
+    const data = (await res.json()) as Out;
+    if (!res.ok) {
+      return { error: data.error ?? errors.speechServiceFailed };
+    }
+    return { text: data.text?.trim() ?? "" };
+  } catch {
+    return { error: errors.speechServiceFailed };
+  }
+}
+
+/** Stuurt browser-opnames naar de server (ingelogd) of guest API. */
 export async function transcribeAudioBlob(
   blob: Blob,
+  lang: AppLang = DEFAULT_APP_LANG,
 ): Promise<{ text?: string; error?: string }> {
+  const errors = getAppCopy(lang).errors;
   const client = getSupabase();
-  if (!client) return { error: "Geen verbinding ingesteld." };
+
+  if (!client) {
+    return transcribeViaGuestApi(blob, lang);
+  }
 
   const session = await getAuthSession(client);
   if (!session?.access_token) {
-    return { error: VOICE_TYPING_FALLBACK };
+    return transcribeViaGuestApi(blob, lang);
   }
 
   const b64 = await blobToBase64(blob).catch(() => "");
-  if (!b64) return { error: "Kon uw opname niet lezen." };
+  if (!b64) return { error: errors.couldNotReadRecording };
 
   const mime = blob.type && blob.type.startsWith("audio")
     ? blob.type
@@ -44,9 +77,10 @@ export async function transcribeAudioBlob(
     body: { audio_base64: b64, mime_type: mime },
   });
 
-  if (error) return { error: error.message ?? "Spraakservice werkte niet." };
-  if (typeof data?.error === "string" && data.error.trim())
+  if (error) return { error: error.message ?? errors.speechServiceFailed };
+  if (typeof data?.error === "string" && data.error.trim()) {
     return { error: data.error.trim() };
+  }
 
   return { text: typeof data?.text === "string" ? data.text.trim() : "" };
 }

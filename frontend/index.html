@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>HartMaatje — Fenna</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1 class="title">HartMaatje</h1>
+        <p class="subtitle">Uw gespreksmaatje: <strong>Fenna</strong></p>
+      </header>
+
+      <section id="status" class="status" data-state="idle" aria-live="polite">
+        Druk op Start om met Fenna te praten.
+      </section>
+
+      <section id="messages" class="messages" aria-label="Gesprek"></section>
+
+      <div id="startPanel" class="actions">
+        <button id="startBtn" type="button" class="btn btn--primary">
+          Start gesprek met Fenna
+        </button>
+      </div>
+
+      <div id="sessionPanel" class="actions" hidden>
+        <div id="micIndicator" class="mic-indicator" aria-live="polite">
+          <span class="mic-indicator__icon" aria-hidden="true">🎤</span>
+          <span id="micLabel" class="mic-indicator__label">Microfoon aan</span>
+        </div>
+        <button id="endBtn" type="button" class="btn btn--end">
+          Gesprek beëindigen
+        </button>
+      </div>
+    </main>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

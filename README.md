@@ -1,6 +1,40 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## HartMaatje — Fenna (new scaffold)
+
+**Fenna** is rebuilt as a **Python FastAPI backend** + **simple browser frontend** — one continuous companion identity.
+
+| Path | Purpose |
+|------|---------|
+| `backend/` | FastAPI — sessions, chat, memory, safety, STT/TTS |
+| `frontend/` | Calm voice-first UI (tablet / phone / PC browser) |
+| `docs/HARTMAATJE-BUILD-PLAN.md` | Full architecture & build plan |
+
+### Run Fenna locally
+
+**Terminal 1 — backend:**
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+pip install -r requirements.txt
+copy .env.example .env          # add GEMINI_API_KEY
+uvicorn app.main:app --reload --port 8000
+```
+
+**Terminal 2 — frontend:**
+```bash
+cd frontend
+python -m http.server 5500
+```
+
+Open **http://localhost:5500** → Start gesprek met Fenna.
+
+The legacy Next.js app on port 3000 remains; the new foundation is `backend/` + `frontend/`.
+
+---
+
+## Getting Started (Next.js legacy UI)
 
 First, run the development server:
 

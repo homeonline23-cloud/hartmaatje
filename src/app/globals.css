@@ -5,7 +5,8 @@
   --foreground: #2c2416;
   --warm-cream: #faf6f0;
   --warm-brown: #5c4a32;
-  --warm-green: #4a6741;
+  --warm-green: #05381F;
+  --warm-green-deep: #1B493C;
   --warm-gold: #c9a96e;
   --soft-shadow: rgba(44, 36, 22, 0.08);
 }
@@ -17,9 +18,11 @@
 }
 
 body {
-  background: #1a4a6e;
+  background: #05381f;
   color: var(--foreground);
   font-family: var(--font-geist-sans), "Segoe UI", system-ui, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.65;
 }
 
 @keyframes hm-glow {
@@ -64,4 +67,19 @@ body {
 
 .hm-pulse-dot {
   animation: hm-pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes hm-character-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hm-character-enter {
+  animation: hm-character-enter 0.55s ease-out forwards;
 }

@@ -1,64 +1,35 @@
 /** Gedeelde teksten en instellingen (geport uit de originele app). */
 
+import {
+  DEFAULT_VOICE_SPEED,
+  normalizeVoiceIdentityId,
+  VOICE_PROFILES,
+  type VoiceIdentityId,
+} from "@/lib/voice";
+
 export const CONSENT_DOCUMENT_VERSION = "1.0";
 
 /** Korte vaste tekst bovenaan het gesprek. */
 export const GESPREK_INTRO =
   "HartMaatje is er om rustig naar u te luisteren.";
 
-export type VoicePresetId =
-  | "nl_female_a"
-  | "nl_female_b"
-  | "nl_male_a"
-  | "nl_male_b";
+/** @deprecated Gebruik VoiceIdentityId uit `@/lib/voice`. */
+export type VoicePresetId = VoiceIdentityId;
 
-export const VOICE_PRESETS: {
-  id: VoicePresetId;
-  headline: string;
-  sub: string;
-  gender: "female" | "male";
-}[] = [
-  {
-    id: "nl_female_a",
-    headline: "Vrouwenstem 1",
-    sub: "Standaard vrouwenstem uit uw browser (zo mogelijk Nederlands).",
-    gender: "female",
-  },
-  {
-    id: "nl_female_b",
-    headline: "Vrouwenstem 2",
-    sub: "Alternatief vrouwelijk (indien uw browser die aanbiedt).",
-    gender: "female",
-  },
-  {
-    id: "nl_male_a",
-    headline: "Mannenstem 1",
-    sub: "Standaard mannenstem uit uw browser (zo mogelijk NL).",
-    gender: "male",
-  },
-  {
-    id: "nl_male_b",
-    headline: "Mannenstem 2",
-    sub: "Alternatief mannelijk (browser-afhankelijk).",
-    gender: "male",
-  },
-];
+export const VOICE_PRESETS = VOICE_PROFILES.map((p) => ({
+  id: p.id,
+  headline: p.label,
+  sub: p.description,
+  gender: p.gender,
+}));
 
-export function normalizePresetId(
-  raw: string | null | undefined,
-): VoicePresetId {
-  if (
-    raw === "nl_female_a" ||
-    raw === "nl_female_b" ||
-    raw === "nl_male_a" ||
-    raw === "nl_male_b"
-  ) {
-    return raw;
-  }
-  return "nl_female_a";
-}
+export const normalizePresetId = normalizeVoiceIdentityId;
 
-export const TTS_RATE_STEPS = [0.92, 1.06, 1.14] as const;
+/** @deprecated Gebruik DEFAULT_VOICE_SPEED uit `@/lib/voice`. */
+export const DEFAULT_TTS_PLAYBACK_RATE = DEFAULT_VOICE_SPEED;
+
+/** @deprecated Gebruik VOICE_SPEED_OPTIONS uit `@/lib/voice`. */
+export const TTS_RATE_STEPS = [0.75, 0.8, 0.92] as const;
 
 /** Opties voor automatisch verwijderen van oude chatberichten (server-side sweep). */
 export const MESSAGE_RETENTION_OPTIONS: readonly {

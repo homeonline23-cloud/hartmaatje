@@ -2,21 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { CalmBackground } from "@/components/ui";
+import { InnerPageBackground } from "@/components/InnerPageBackground";
+import { useLanguageOptional } from "@/context/LanguageContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { app } = useLanguageOptional();
 
   useEffect(() => {
     router.replace("/");
   }, [router]);
 
   return (
-    <div className="relative min-h-screen">
-      <CalmBackground />
+    <>
+      <InnerPageBackground />
       <div className="relative z-10 flex min-h-screen items-center justify-center">
-        <p className="text-xl text-[#2c2416]">Even geduld…</p>
+      <p className="text-xl text-white drop-shadow-md">{app.common.loading}</p>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,31 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { getVoiceSpeedLabel } from "@/lib/appLocale";
 import {
-  normalizePresetId,
-  TTS_RATE_STEPS,
-  VOICE_PRESETS,
-  type VoicePresetId,
-} from "@/lib/constants";
-import { speakDutch } from "@/lib/tts";
+  defaultVoiceSettings,
+  getVoiceIdentity,
+  loadLocalVoiceSettings,
+  nearestVoiceSpeedStep,
+  previewHartMaatjeVoice,
+  resolveVoiceSettings,
+  saveLocalVoiceSettings,
+  VOICE_SPEED_OPTIONS,
+  type VoiceUserSettings,
+} from "@/lib/voice";
 import { AppPagePanel } from "@/components/AppPagePanel";
 import { Card, ErrorBanner, PrimaryButton, TextField } from "@/components/ui";
 
-function rateCaption(step: number): string {
-  if (Math.abs(step - TTS_RATE_STEPS[0]) < 1e-3) return "Rustig";
-  if (Math.abs(step - TTS_RATE_STEPS[2]) < 1e-3) return "Iets sneller";
-  return "Standaard";
-}
-
 export default function InstellingenPage() {
   const { user, profile, updateProfileFields, refreshProfile } = useAuth();
+  const { app, lang } = useLanguage();
+  const copy = app.settings;
 
   const [name, setName] = useState("");
   const [formal, setFormal] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [guestVoice, setGuestVoice] = useState<VoiceUserSettings | null>(null);
 
   useEffect(() => {
     if (!profile) return;
@@ -33,15 +37,18 @@ export default function InstellingenPage() {
     setFormal(profile.address_form !== "informeel");
   }, [profile?.address_form, profile?.display_name, profile?.id]);
 
-  const currentPreset = normalizePresetId(profile?.tts_preset_id);
-  const currentPlayback = profile?.tts_playback_rate ?? 1.06;
-  const rateStepHighlight = TTS_RATE_STEPS.reduce(
-    (best, step) =>
-      Math.abs(step - currentPlayback) < Math.abs(best - currentPlayback)
-        ? step
-        : best,
-    TTS_RATE_STEPS[1],
-  );
+  useEffect(() => {
+    if (user) return;
+    setGuestVoice(loadLocalVoiceSettings() ?? defaultVoiceSettings());
+  }, [user]);
+
+  const voiceSettings = useMemo(() => {
+    if (user && profile) return resolveVoiceSettings(profile);
+    return guestVoice ?? defaultVoiceSettings();
+  }, [guestVoice, profile, user]);
+
+  const currentVoiceName = getVoiceIdentity(voiceSettings.identityId).displayName;
+  const rateStepHighlight = nearestVoiceSpeedStep(voiceSettings.playbackRate);
 
   const onSaveProfile = async () => {
     setBusy(true);
@@ -53,138 +60,145 @@ export default function InstellingenPage() {
     });
     setBusy(false);
     if (res.error) setError(res.error);
-    else setMessage("Profiel opgeslagen.");
-  };
-
-  const onPickPreset = async (id: VoicePresetId) => {
-    setBusy(true);
-    setError(null);
-    const res = await updateProfileFields({ tts_preset_id: id });
-    setBusy(false);
-    if (res.error) setError(res.error);
-    else {
-      setMessage("Stem gekozen voor voorlezen.");
-      speakDutch("Zo klinkt deze stem. Fijn dat u er bent.", {
-        preset: id,
-        rate: currentPlayback,
-      });
-    }
+    else setMessage(copy.profileSaved);
   };
 
   const onPickRate = async (rate: number) => {
     setBusy(true);
     setError(null);
-    const res = await updateProfileFields({ tts_playback_rate: rate });
-    setBusy(false);
-    if (res.error) setError(res.error);
-    else {
-      setMessage(`Voorleestempo op ${Math.round(rate * 100)} % gezet.`);
-      speakDutch("Dit is het gekozen tempo.", {
-        preset: currentPreset,
-        rate,
-      });
+    const next: VoiceUserSettings = {
+      identityId: voiceSettings.identityId,
+      playbackRate: rate,
+    };
+
+    if (user) {
+      const res = await updateProfileFields({ tts_playback_rate: rate });
+      setBusy(false);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      setMessage(copy.speedSaved);
+    } else {
+      saveLocalVoiceSettings(next);
+      setGuestVoice(next);
+      setBusy(false);
+      setMessage(copy.speedSavedLocal);
     }
+
+    previewHartMaatjeVoice(voiceSettings.identityId, rate);
   };
 
   return (
-    <AppPagePanel
-      title="Instellingen"
-      intro="Uw profiel. Spraak: opname wordt enkel gebruikt voor omzetting naar tekst; voorlezen gaat via de stemmen van uw browser (vier keuzestanden)."
-    >
+    <AppPagePanel title={copy.title} intro={copy.intro}>
       <Card>
-        <h2 className="text-lg font-semibold text-[#2c2416]">Uw e-mail</h2>
-        <p className="mb-4 text-lg text-[#5c4a32]">{user?.email ?? "—"}</p>
+        <h2 className="mb-3 text-xl font-semibold text-[#2c2416]">
+          {copy.navHeading}
+        </h2>
+        <div className="space-y-2">
+          <Link
+            href="/"
+            className="block rounded-2xl border-2 border-[#4a6741] bg-[#eef3ea] px-4 py-4 text-center text-xl font-bold text-[#2c4a22]"
+          >
+            {copy.navHome}
+          </Link>
+          <Link
+            href="/app/geheugen"
+            className="block rounded-2xl border-2 border-[#d8ccb8] bg-white px-4 py-3 text-center text-xl font-semibold text-[#2c2416]"
+          >
+            {copy.navMemory}
+          </Link>
+          <Link
+            href="/app/privacy"
+            className="block rounded-2xl border-2 border-[#d8ccb8] bg-white px-4 py-3 text-center text-xl font-semibold text-[#2c2416]"
+          >
+            {copy.navPrivacy}
+          </Link>
+        </div>
+      </Card>
 
-        <TextField label="Naam (optioneel)" value={name} onChange={setName} />
+      <Card>
+        <h2 className="text-xl font-semibold text-[#2c2416]">{copy.emailHeading}</h2>
+        <p className="mb-4 text-xl text-[#5c4a32]">{user?.email ?? "—"}</p>
 
-        <p className="mb-2 mt-4 text-lg font-medium text-[#2c2416]">
-          Aanspreekvorm
+        <TextField label={copy.nameLabel} value={name} onChange={setName} />
+
+        <p className="mb-2 mt-4 text-xl font-medium text-[#2c2416]">
+          {copy.addressHeading}
         </p>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setFormal(true)}
-            className={`flex-1 rounded-2xl border-2 px-4 py-3 text-lg ${
+            className={`flex-1 rounded-2xl border-2 px-4 py-3 text-xl ${
               formal
                 ? "border-[#4a6741] bg-[#4a6741] font-semibold text-white"
                 : "border-[#d8ccb8] bg-white text-[#2c2416]"
             }`}
           >
-            U (formeel)
+            {copy.formal}
           </button>
           <button
             type="button"
             onClick={() => setFormal(false)}
-            className={`flex-1 rounded-2xl border-2 px-4 py-3 text-lg ${
+            className={`flex-1 rounded-2xl border-2 px-4 py-3 text-xl ${
               !formal
                 ? "border-[#4a6741] bg-[#4a6741] font-semibold text-white"
                 : "border-[#d8ccb8] bg-white text-[#2c2416]"
             }`}
           >
-            Jij (informeel)
+            {copy.informal}
           </button>
         </div>
 
         <div className="mt-4">
           <PrimaryButton
-            label={busy ? "Bezig…" : "Profiel opslaan"}
-            disabled={busy}
+            label={busy ? copy.saving : copy.saveProfile}
+            disabled={busy || !user}
             onClick={() => void onSaveProfile()}
           />
         </div>
       </Card>
 
       <Card>
-        <h2 className="mb-1 text-lg font-semibold text-[#2c2416]">
-          Voorlezen (tekst-naar-spraak)
+        <h2 className="mb-2 text-xl font-semibold text-[#2c2416]">
+          {copy.safetyTest.cardHeading}
         </h2>
-        <p className="mb-3 text-base text-[#5c4a32]">
-          Kies een van vier stemmen. Welke stemmen beschikbaar zijn hangt af van
-          uw browser; we proberen automatisch Nederlandse stemmen te vinden.
+        <p className="mb-4 text-lg leading-relaxed text-[#5c4a32] sm:text-xl">
+          {copy.safetyTest.cardIntro}
         </p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {VOICE_PRESETS.map((p) => {
-            const sel = currentPreset === p.id;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => void onPickPreset(p.id)}
-                className={`rounded-2xl border-2 p-4 text-left ${
-                  sel
-                    ? "border-[#4a6741] bg-[#eef3ea]"
-                    : "border-[#d8ccb8] bg-white"
-                }`}
-              >
-                <span className="block font-bold text-[#2c2416]">
-                  {p.headline}
-                </span>
-                <span className="mt-1 block text-sm text-[#5c4a32]">
-                  {p.sub}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <Link
+          href="/app/instellingen/veiligheidstest"
+          className="block rounded-2xl border-2 border-[#4a6741] bg-[#eef3ea] px-4 py-4 text-center text-xl font-bold text-[#2c4a22]"
+        >
+          {copy.safetyTest.openLink}
+        </Link>
+      </Card>
 
-        <p className="mb-2 mt-4 text-lg font-medium text-[#2c2416]">
-          Tempo bij voorlezen
+      <Card>
+        <h2 className="mb-1 text-xl font-semibold text-[#2c2416]">
+          {copy.speedHeading}
+        </h2>
+        <p className="mb-2 text-lg text-[#5c4a32] sm:text-xl">
+          {copy.speedIntro(currentVoiceName)}
         </p>
+        <p className="mb-3 text-lg text-[#5c4a32] sm:text-xl">{copy.speedHint}</p>
         <div className="flex flex-wrap gap-2">
-          {TTS_RATE_STEPS.map((step) => {
-            const hl = Math.abs(rateStepHighlight - step) < 0.015;
+          {VOICE_SPEED_OPTIONS.map((option) => {
+            const selected = Math.abs(rateStepHighlight - option.rate) < 0.015;
             return (
               <button
-                key={step}
+                key={option.rate}
                 type="button"
-                onClick={() => void onPickRate(step)}
-                className={`flex-1 rounded-2xl border-2 px-3 py-3 text-base ${
-                  hl
+                onClick={() => void onPickRate(option.rate)}
+                disabled={busy}
+                className={`flex-1 rounded-2xl border-2 px-3 py-3.5 text-lg disabled:opacity-60 sm:text-xl ${
+                  selected
                     ? "border-[#4a6741] bg-[#4a6741] font-semibold text-white"
                     : "border-[#d8ccb8] bg-white text-[#2c2416]"
                 }`}
               >
-                {`${rateCaption(step)} (${Math.round(step * 100)} %)`}
+                {getVoiceSpeedLabel(lang, option.rate)}
               </button>
             );
           })}
@@ -193,16 +207,18 @@ export default function InstellingenPage() {
 
       <ErrorBanner message={error} />
       {message ? (
-        <p className="rounded-xl border-2 border-[#4a6741]/40 bg-[#eef3ea] px-4 py-3 text-lg text-[#3d5636]">
+        <p className="rounded-xl border-2 border-[#4a6741]/40 bg-[#eef3ea] px-4 py-3 text-xl text-[#3d5636]">
           {message}
         </p>
       ) : null}
 
-      <PrimaryButton
-        label="Van server laden"
-        variant="outline"
-        onClick={() => void refreshProfile()}
-      />
+      {user ? (
+        <PrimaryButton
+          label={copy.reloadFromServer}
+          variant="outline"
+          onClick={() => void refreshProfile()}
+        />
+      ) : null}
     </AppPagePanel>
   );
 }

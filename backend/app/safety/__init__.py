@@ -1,0 +1,1 @@
+# Safety — emergency & distress detection

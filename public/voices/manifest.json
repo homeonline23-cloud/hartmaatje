@@ -1,0 +1,72 @@
+{
+  "version": 3,
+  "ethics": "HartMaatje gebruikt alleen legale, zorgvuldig gekozen stemmen waarvoor gebruik is toegestaan, en kopieert nooit bewust de stem van een echte persoon zonder duidelijke toestemming.",
+  "defaultIdentityId": "fenna",
+  "defaultSpeed": 0.8,
+  "identities": {
+    "maarten": {
+      "displayName": "Maarten",
+      "gender": "male",
+      "active": true,
+      "variants": {
+        "nl-NL": {
+          "sourceFile": "/voices/identities/maarten/nl-NL/NL-Maarten-man-2.mp3",
+          "active": true
+        },
+        "en-US": {
+          "sourceFile": "/voices/identities/maarten/en-US/US-Maarten-man.mp3",
+          "active": true
+        }
+      },
+      "futureLanguageVariants": ["de-DE", "fr-FR", "es-ES"]
+    },
+    "peter": {
+      "displayName": "Peter",
+      "gender": "male",
+      "active": true,
+      "variants": {
+        "nl-BE": {
+          "sourceFile": "/voices/identities/peter/nl-BE/NL-Belgie-Peter-man.mp3",
+          "active": true
+        },
+        "en-US": {
+          "sourceFile": "/voices/identities/peter/en-US/US-Peter-man.mp3",
+          "active": true
+        }
+      },
+      "futureLanguageVariants": ["nl-NL", "fr-BE", "de-DE", "fr-FR"]
+    },
+    "fenna": {
+      "displayName": "Fenna",
+      "gender": "female",
+      "active": true,
+      "variants": {
+        "nl-NL": {
+          "sourceFile": "/voices/identities/fenna/nl-NL/NL-Fenna-vrouw-4.mp3",
+          "active": true
+        },
+        "en-US": {
+          "sourceFile": "/voices/identities/fenna/en-US/US-Fenna-vrouw.mp3",
+          "active": true
+        }
+      },
+      "futureLanguageVariants": ["de-DE", "fr-FR", "es-ES"]
+    },
+    "colette": {
+      "displayName": "Colette",
+      "gender": "female",
+      "active": true,
+      "variants": {
+        "nl-NL": {
+          "sourceFile": "/voices/identities/colette/nl-NL/NL-Colette-vrouw-3.mp3",
+          "active": true
+        },
+        "en-US": {
+          "sourceFile": "/voices/identities/colette/en-US/US-Colette-vrouw.mp3",
+          "active": true
+        }
+      },
+      "futureLanguageVariants": ["de-DE", "fr-FR", "es-ES"]
+    }
+  }
+}
