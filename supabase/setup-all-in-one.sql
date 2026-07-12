@@ -28,13 +28,32 @@ create table if not exists public.profiles (
 create table if not exists public.consent_audit (
   id uuid primary key default gen_random_uuid (),
   user_id uuid not null references auth.users (id) on delete cascade,
-  kind text not null,
+  kind text not null check (
+    kind in (
+      'account',
+      'voice',
+      'memory',
+      'analytics',
+      'cloud_processing'
+    )
+  ),
   granted boolean not null,
   consent_version text not null,
   created_at timestamptz not null default now()
 );
 
 create index if not exists consent_audit_user_id_idx on public.consent_audit (user_id);
+
+alter table public.consent_audit drop constraint if exists consent_audit_kind_ok;
+alter table public.consent_audit add constraint consent_audit_kind_ok check (
+  kind in (
+    'account',
+    'voice',
+    'memory',
+    'analytics',
+    'cloud_processing'
+  )
+);
 
 alter table public.profiles enable row level security;
 alter table public.consent_audit enable row level security;
@@ -189,10 +208,13 @@ create trigger memory_facts_set_updated_at
 -- 4) Voice profile (TTS preset + snelheid)
 -- ---------------------------------------------------------------------
 alter table public.profiles
-  add column if not exists tts_preset_id text not null default 'nl_female_a';
+  add column if not exists tts_preset_id text not null default 'fenna';
+
+comment on column public.profiles.tts_preset_id is
+  'Permanente HartMaatje-stemidentiteit: maarten, peter, fenna, colette. Oude waarden (nl_female_a e.d.) worden in de app omgezet.';
 
 alter table public.profiles
-  add column if not exists tts_playback_rate real not null default 1.06;
+  add column if not exists tts_playback_rate real not null default 0.8;
 
 alter table public.profiles drop constraint if exists profiles_tts_playback_chk;
 alter table public.profiles add constraint profiles_tts_playback_chk check (

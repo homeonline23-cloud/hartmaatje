@@ -2,10 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import {
-  CONSENT_DOCUMENT_VERSION,
-  MESSAGE_RETENTION_OPTIONS,
-} from "@/lib/constants";
+import { useLanguage } from "@/context/LanguageContext";
+import { CONSENT_DOCUMENT_VERSION } from "@/lib/constants";
+import type { ConsentKind } from "@/lib/consent/consentKinds";
+import { logConsentAudit } from "@/lib/consent/logConsentAudit";
+import { translateApiError } from "@/lib/appLocale";
 import { buildUserDataExport, downloadUserDataExport } from "@/lib/exportUserData";
 import { requestAccountDeletion } from "@/lib/requestAccountDeletion";
 import { getSupabase } from "@/lib/supabase";
@@ -16,6 +17,8 @@ import { Card, ErrorBanner, PrimaryButton } from "@/components/ui";
 export default function PrivacyPage() {
   const router = useRouter();
   const { user, profile, refreshProfile, updateProfileFields } = useAuth();
+  const { app, lang } = useLanguage();
+  const copy = app.privacy;
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -27,79 +30,81 @@ export default function PrivacyPage() {
     const { data, error: err } = await buildUserDataExport();
     setBusy(null);
     if (err) {
-      setError(err);
+      setError(translateApiError(err, lang));
       return;
     }
     setPreviewLines([
-      `Profielregels: ${data.profile ? "1" : "0"}`,
-      `Geheugenfeiten: ${data.memory_facts.length}`,
-      `Gesprekken: ${data.conversations.length}`,
-      `Berichten totaal: ${data.conversations.reduce(
+      `${copy.previewProfileRows}: ${data.profile ? "1" : "0"}`,
+      `${copy.previewMemoryFacts}: ${data.memory_facts.length}`,
+      `${copy.previewConversations}: ${data.conversations.length}`,
+      `${copy.previewMessagesTotal}: ${data.conversations.reduce(
         (n, x) => n + x.messages.length,
         0,
       )}`,
-      `Toestemmingslog: ${data.consent_audit.length} regels`,
+      `${copy.previewConsentLog}: ${data.consent_audit.length}`,
     ]);
-  }, []);
+  }, [copy, lang]);
 
   const onExport = async () => {
     setBusy("export");
     setError(null);
     const res = await downloadUserDataExport();
     setBusy(null);
-    if (res.error) setError(res.error);
-    else setInfo("Uw export is gedownload naar uw apparaat.");
+    if (res.error) setError(translateApiError(res.error, lang));
+    else setInfo(copy.exportDone);
   };
 
-  const revoke = async (kind: "analytics" | "cloud_processing", column: string) => {
+  const revoke = async (
+    kind: Extract<ConsentKind, "analytics" | "cloud_processing">,
+    column: string,
+  ) => {
     const client = getSupabase();
     const uid = user?.id;
     if (!client || !uid) return;
     setBusy(kind);
     await client.from("profiles").update({ [column]: null }).eq("id", uid);
-    await client.from("consent_audit").insert({
-      user_id: uid,
-      kind,
-      granted: false,
-      consent_version: CONSENT_DOCUMENT_VERSION,
-    });
+    const logged = await logConsentAudit(client, uid, [{ kind, granted: false }]);
+    if (logged.error) {
+      setBusy(null);
+      setError(translateApiError(logged.error, lang));
+      return;
+    }
     await refreshProfile();
     setBusy(null);
-    setInfo("Toestemming is bijgewerkt in uw profiel.");
+    setInfo(copy.consentUpdated);
   };
 
   const onDeleteAccount = async () => {
-    if (
-      !window.confirm(
-        "Dit verwijdert uw account, profiel, gesprekken, geheugen en logboeken definitief. Doorgaan?",
-      )
-    )
-      return;
-    if (!window.confirm("Laatste bevestiging: weet u zeker dat alles weg moet?"))
-      return;
+    if (!window.confirm(copy.deleteConfirm1)) return;
+    if (!window.confirm(copy.deleteConfirm2)) return;
     setBusy("delete");
     const res = await requestAccountDeletion();
     setBusy(null);
-    if (res.error) setError(res.error);
+    if (res.error) setError(translateApiError(res.error, lang));
     else router.replace("/");
   };
 
   return (
-    <AppPagePanel
-      title="Privacy-dashboard"
-      intro="U heeft recht op inzage, correctie, export en verwijdering (AVG). Correcties doet u deels zelf via Instellingen (profiel) en Geheugen (feiten). Hieronder exporteert u alles of wist u het volledige account."
-    >
+    <AppPagePanel title={copy.title} intro={copy.intro}>
       <Card>
         <h2 className="mb-2 text-xl font-semibold text-[#2c2416]">
-          Wat we bijhouden (kort)
+          {copy.whatWeKeepHeading}
         </h2>
         <ul className="list-inside list-disc space-y-2 text-lg text-[#5c4a32]">
-          <li>Profiel en voorkeuren (naam, aanspreekvorm, stem/tempo, bewaartermijn)</li>
-          <li>Toestemmingen en wijzigingen daarvan</li>
-          <li>Geheugenfeiten die u zelf opslaat</li>
-          <li>Gesprekken en berichten met de AI</li>
-          <li>Versie privacytekst: {CONSENT_DOCUMENT_VERSION}</li>
+          {copy.whatWeKeepItems.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+          <li>
+            {copy.privacyVersionLabel}: {CONSENT_DOCUMENT_VERSION}
+          </li>
         </ul>
+      </Card>
+
+      <Card>
+        <h2 className="mb-2 text-xl font-semibold text-[#2c2416]">
+          {copy.voicesHeading}
+        </h2>
+        <p className="text-lg leading-relaxed text-[#5c4a32]">{copy.voicesBody}</p>
       </Card>
 
       <ErrorBanner message={error} />
@@ -110,7 +115,7 @@ export default function PrivacyPage() {
       ) : null}
 
       <PrimaryButton
-        label="Voorbeeld van omvang tonen"
+        label={copy.previewButton}
         variant="outline"
         onClick={() => void loadPreview()}
         disabled={Boolean(busy)}
@@ -126,22 +131,18 @@ export default function PrivacyPage() {
       ) : null}
 
       <PrimaryButton
-        label={busy === "export" ? "Bezig…" : "Exporteer al mijn gegevens (JSON)"}
+        label={busy === "export" ? copy.busy : copy.exportButton}
         disabled={Boolean(busy)}
         onClick={() => void onExport()}
       />
 
       <div>
         <h2 className="mb-2 mt-4 text-xl font-semibold text-[#2c2416]">
-          Bewaartermijn chatberichten
+          {copy.retentionHeading}
         </h2>
-        <p className="mb-3 text-base text-[#5c4a32]">
-          Kiest u een termijn, dan worden berichten ouder dan die periode
-          periodiek van de server verwijderd. Geheugenfeiten vallen hier niet
-          onder.
-        </p>
+        <p className="mb-3 text-base text-[#5c4a32]">{copy.retentionIntro}</p>
         <div className="space-y-2">
-          {MESSAGE_RETENTION_OPTIONS.map((opt) => {
+          {app.retentionOptions.map((opt) => {
             const cur = profile?.message_retention_days ?? null;
             const sel =
               (opt.days == null && cur == null) ||
@@ -159,7 +160,7 @@ export default function PrivacyPage() {
                     });
                     await refreshProfile();
                     setBusy(null);
-                    if (res.error) setError(res.error);
+                    if (res.error) setError(translateApiError(res.error, lang));
                   })();
                 }}
                 className={`w-full rounded-2xl border-2 px-4 py-3 text-left text-lg ${
@@ -177,17 +178,17 @@ export default function PrivacyPage() {
 
       <div>
         <h2 className="mb-2 mt-4 text-xl font-semibold text-[#2c2416]">
-          Optionele toestemmingen intrekken
+          {copy.revokeHeading}
         </h2>
         <div className="space-y-2">
           <PrimaryButton
-            label="Zet optionele analytiek uit"
+            label={copy.revokeAnalytics}
             variant="outline"
             disabled={Boolean(busy) || !profile?.consent_analytics_at}
             onClick={() => void revoke("analytics", "consent_analytics_at")}
           />
           <PrimaryButton
-            label="Trek optionele cloud-verwerking in"
+            label={copy.revokeCloud}
             variant="outline"
             disabled={Boolean(busy) || !profile?.consent_cloud_at}
             onClick={() => void revoke("cloud_processing", "consent_cloud_at")}
@@ -196,9 +197,11 @@ export default function PrivacyPage() {
       </div>
 
       <div className="mt-4 rounded-2xl border-2 border-red-300 bg-red-50/60 p-4">
-        <h2 className="mb-2 text-xl font-semibold text-red-700">Gevaarzone</h2>
+        <h2 className="mb-2 text-xl font-semibold text-red-700">
+          {copy.dangerZoneHeading}
+        </h2>
         <PrimaryButton
-          label={busy === "delete" ? "Bezig…" : "Verwijder mijn volledige account"}
+          label={busy === "delete" ? copy.busy : copy.deleteAccountButton}
           disabled={Boolean(busy)}
           onClick={() => void onDeleteAccount()}
         />

@@ -10,26 +10,18 @@ import {
   useState,
 } from "react";
 
+import { logConsentAudit } from "@/lib/consent/logConsentAudit";
 import { CONSENT_DOCUMENT_VERSION } from "@/lib/constants";
+import {
+  loadOrCreateUserProfile,
+  readableProfileError,
+} from "@/lib/profile/ensureUserProfile";
+import { clampVoiceSpeed } from "@/lib/voice/speed";
+import { normalizeVoiceIdentityId } from "@/lib/voice/legacy";
 import { getSupabase, getAuthSession, isSupabaseConfigured } from "@/lib/supabase";
+import type { Profile } from "@/lib/profile/types";
 
-export type Profile = {
-  id: string;
-  display_name: string | null;
-  address_form: "formeel" | "informeel";
-  partner_avatar_path: string | null;
-  tts_preset_id: string | null;
-  tts_playback_rate: number | null;
-  intro_seen_at: string | null;
-  consent_account_at: string | null;
-  consent_voice_at: string | null;
-  consent_memory_at: string | null;
-  consent_analytics_at: string | null;
-  consent_cloud_at: string | null;
-  consents_completed_at: string | null;
-  consent_document_version: string;
-  message_retention_days: number | null;
-};
+export type { Profile } from "@/lib/profile/types";
 
 type ConsentPatch = {
   voice: boolean;
@@ -95,19 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setProfileLoading(true);
     setProfileError(null);
-    const { data, error } = await client
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .single();
+    const result = await loadOrCreateUserProfile(client, session.user.id);
     setProfileLoading(false);
-    if (error) {
-      setProfileError(error.message);
+    if (result.error || !result.profile) {
+      setProfileError(
+        readableProfileError(result.error ?? "Profiel kon niet worden geladen."),
+      );
       setProfile(null);
       return;
     }
-    setProfile(data as Profile);
-  }, [client, session?.user?.id]);
+    setProfile(result.profile);
+  }, [client, session]);
 
   useEffect(() => {
     if (!client) {
@@ -171,7 +161,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const uid = userIdOverride ?? session?.user?.id;
     if (!uid) return { error: "Geen sessie." };
     const now = new Date().toISOString();
-    await logConsentKinds(client, uid, [{ kind: "account", granted: true }]);
+    const logged = await logConsentAudit(client, uid, [
+      { kind: "account", granted: true },
+    ]);
+    if (logged.error) return { error: logged.error };
     const { error } = await client
       .from("profiles")
       .update({
@@ -204,12 +197,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
     const now = new Date().toISOString();
-    await logConsentKinds(client, session.user.id, [
+    const logged = await logConsentAudit(client, session.user.id, [
       { kind: "voice", granted: opts.voice },
       { kind: "memory", granted: opts.memory },
       { kind: "analytics", granted: opts.analytics },
       { kind: "cloud_processing", granted: opts.cloud },
     ]);
+    if (logged.error) return { error: logged.error };
     const { error } = await client
       .from("profiles")
       .update({
@@ -238,13 +232,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (patch.tts_preset_id !== undefined) {
       const preset = patch.tts_preset_id;
       updates.tts_preset_id =
-        preset == null || preset.trim() === "" ? null : preset.trim();
+        preset == null || preset.trim() === ""
+          ? null
+          : normalizeVoiceIdentityId(preset.trim());
     }
     if (patch.tts_playback_rate !== undefined && patch.tts_playback_rate != null) {
-      updates.tts_playback_rate = Math.min(
-        1.32,
-        Math.max(0.78, Number(patch.tts_playback_rate)),
-      );
+      updates.tts_playback_rate = clampVoiceSpeed(patch.tts_playback_rate);
     }
     if (patch.message_retention_days !== undefined) {
       const v = patch.message_retention_days;
@@ -285,20 +278,6 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth moet binnen AuthProvider gebruikt worden");
   return ctx;
-}
-
-async function logConsentKinds(
-  client: NonNullable<ReturnType<typeof getSupabase>>,
-  userId: string,
-  rows: { kind: string; granted: boolean }[],
-) {
-  const payload = rows.map((r) => ({
-    user_id: userId,
-    kind: r.kind,
-    granted: r.granted,
-    consent_version: CONSENT_DOCUMENT_VERSION,
-  }));
-  await client.from("consent_audit").insert(payload);
 }
 
 function readableAuthError(message: string): string {
