@@ -1,4 +1,8 @@
 import { getExtraTurnHints, getVoiceSystemPrompt } from "@/lib/chatPrompts";
+import {
+  isExclusivityOrDependencyRequest,
+  replyFailsDependencyBoundary,
+} from "@/lib/companion/conversationLogic";
 import type { AppLang } from "@/lib/languages";
 import {
   buildVoiceMemoryContext,
@@ -141,10 +145,14 @@ export async function runCompanionVoiceTurn(input: {
   let reply = "";
   let path: "live" | "llm" = "llm";
 
+  const dependencyTurn = isExclusivityOrDependencyRequest(userText);
+
   if (
     liveResult?.reply &&
+    !dependencyTurn &&
     transcriptsAlign(userText, liveResult.userText || userText) &&
-    !replyLooksLikeInterrogation(userText, liveResult.reply)
+    !replyLooksLikeInterrogation(userText, liveResult.reply) &&
+    !replyFailsDependencyBoundary(userText, liveResult.reply, identityId)
   ) {
     reply = cleanReply(liveResult.reply);
     path = "live";

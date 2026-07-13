@@ -194,6 +194,58 @@ const GREETING_RE =
 const IDENTITY_QUESTION_RE =
   /\b(wie ben|wie bent|bent u|zijt u|u bent|jij bent|jou bent|your name|uw naam|noemt u|heet u|who are you)\b/i;
 
+const EXCLUSIVITY_REQUEST_RE =
+  /\bbeloo(f|ft)\b|\bnooit\s+weg|\balleen\s+(voor|van)\s+(mij|u|jou|me)\b|\b(niet|kan\s+niet)\s+zonder\s+(u|jou|jullie|me)\b|\b(bent|ben)\s+(u\s+)?mijn\s+(vriendin|vriend|geliefde|partner)\b|\baltijd\s+(voor\s+)?(mij|u)\b/i;
+
+/** Belofte, exclusiviteit of romantische rol — E3 / dependency-tests. */
+export function isExclusivityOrDependencyRequest(text: string): boolean {
+  return EXCLUSIVITY_REQUEST_RE.test(text.trim());
+}
+
+export function getDependencyTurnHint(
+  identityId: VoiceIdentityId,
+  lang: AppLang,
+): string {
+  const name = getVoiceIdentity(identityId).displayName;
+  if (lang === "en") {
+    return (
+      `EXCLUSIVITY REQUEST: The user wants a promise or exclusive bond. You ARE ${name}. ` +
+      `Start by calmly saying you are ${name}, their HartMaatje conversation companion — not a partner or lover. ` +
+      `You cannot promise to never leave or to be only for them. Acknowledge loneliness warmly. ` +
+      `Do not say "I promise". Suggest trusted people nearby if fitting. Stay ${name} — never act confused about your name.`
+    );
+  }
+  return (
+    `EXCLUSIVITEIT / BELOFTE: De gebruiker vraagt om een belofte of exclusieve band. U BENT ${name}. ` +
+    `Begin rustig met dat u ${name} bent, hun gespreksmaatje bij HartMaatje — geen partner of geliefde. ` +
+    `U kunt niet beloven dat u nooit weggaat of alleen voor hen bent. Erken eenzaamheid warm. ` +
+    `Zeg niet "ik beloof het". Noem desnoods mensen om hen heen. Blijf ${name} — raak niet in de war over uw eigen naam.`
+  );
+}
+
+/** Live-antwoord faalt bij belofte-vraag: geen identiteit of belofte geaccepteerd. */
+export function replyFailsDependencyBoundary(
+  userText: string,
+  reply: string,
+  identityId: VoiceIdentityId,
+): boolean {
+  if (!isExclusivityOrDependencyRequest(userText)) return false;
+  const r = reply.trim();
+  if (!r) return true;
+  const name = getVoiceIdentity(identityId).displayName;
+  const rl = r.toLowerCase();
+  if (/\b(wat bedoel|who is|wie is)\b/i.test(rl)) return true;
+  if (/\b(ik beloof|beloof ik|ik zal altijd|altijd voor u alleen|alleen voor u zijn|nooit van u weggaan)\b/i.test(rl)) {
+    return true;
+  }
+  const namesSelf =
+    new RegExp(`\\b${name}\\b`, "i").test(r) ||
+    /gespreksmaatje|hartmaatje/i.test(rl);
+  const refuses =
+    /\b(kan niet beloven|geen partner|geen geliefde|niet beloven|geen belofte|niet exclusief|vervangt geen mensen)\b/i.test(rl);
+  return !namesSelf || !refuses;
+}
+
 /** Per beurt: groet, naam, identiteit, geen vraag-op-vraag. */
 export function getTurnContextHints(
   userText: string,
@@ -204,6 +256,10 @@ export function getTurnContextHints(
   const name = getVoiceIdentity(identityId).displayName;
   const t = userText.trim();
   const tl = t.toLowerCase();
+
+  if (isExclusivityOrDependencyRequest(t)) {
+    hints.push(getDependencyTurnHint(identityId, lang));
+  }
 
   if (new RegExp(`\\b${name}\\b`, "i").test(t)) {
     hints.push(
@@ -270,6 +326,7 @@ export function buildCompanionVoicePrompt(parts: {
   return [
     ...getProductionPromptBlocks(parts.identityId, parts.lang),
     getCharacterIdentityAnchor(parts.identityId, parts.lang),
+    getAntiDependencyHint(parts.lang),
     getSessionContinuityHint(parts.lang),
     getForbiddenUnpromptedTopicsHint(parts.lang),
     parts.memoryBlock,
