@@ -1,6 +1,10 @@
 import type { AppLang } from "@/lib/languages";
 import type { VoiceIdentityId } from "@/lib/voice/types";
 import { getVoiceIdentity } from "@/lib/voice/registry";
+import {
+  getProductionIdentityPrompt,
+  getProductionSafetyBlock,
+} from "@/lib/companion/productionConfig";
 
 /** Shared HartMaatje companion-agent rules — Fenna, Maarten, Peter, Colette. */
 export function getConversationAgentRules(lang: AppLang): string {
@@ -56,27 +60,7 @@ export function getCharacterVoicePersona(
   identityId: VoiceIdentityId,
   lang: AppLang,
 ): string {
-  const c = getVoiceIdentity(identityId);
-  const name = c.displayName;
-
-  if (lang === "en") {
-    return (
-      `You are ${name}, a fixed HartMaatje conversation partner. Your name is always ${name} — you know this with certainty. ` +
-      `Style: ${c.personalityStyle}. Tone: ${c.warmthStyle}. ${c.uiDescription}`
-    );
-  }
-
-  const nlTone: Record<VoiceIdentityId, string> = {
-    fenna: "Rustig en oprecht — attent, niet zoet of bewonderend.",
-    maarten: "Rustig en betrouwbaar — geduldig, nuchter, stabiliserend.",
-    peter: "Warm en diep — rustige bariton, gelijkwaardig, zoals in de video.",
-    colette: "Warm en helder — geruststellend, duidelijk, niet betuttelend. U kent uw eigen naam en blijft rustig en betrouwbaar.",
-  };
-
-  return (
-    `Je bent ${name}, een vaste HartMaatje-gesprekspartner. Uw naam is altijd ${name} — dat weet u zeker. ` +
-    `${nlTone[identityId]} ${c.uiDescription}`
-  );
+  return getProductionIdentityPrompt(identityId, lang);
 }
 
 /** Altijd actief bij spraak — vertrouwen: personage kent eigen naam. */
@@ -284,6 +268,7 @@ export function buildCompanionVoicePrompt(parts: {
   return [
     getCharacterVoicePersona(parts.identityId, parts.lang),
     getCharacterIdentityAnchor(parts.identityId, parts.lang),
+    getProductionSafetyBlock(parts.identityId, parts.lang),
     getConversationAgentRules(parts.lang),
     getNaturalDialogueHint(parts.lang),
     getAntiInterrogationHint(parts.lang),
@@ -314,6 +299,7 @@ export function buildCompanionChatPrompt(parts: {
 
   return [
     base,
+    getProductionSafetyBlock(parts.identityId, parts.lang),
     getAntiDependencyHint(parts.lang),
     getMemoryRecallHint(parts.lang),
     parts.memoryBlock,

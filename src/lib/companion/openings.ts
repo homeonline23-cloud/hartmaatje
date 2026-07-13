@@ -1,31 +1,25 @@
 import type { AppLang } from "@/lib/languages";
 import type { VoiceIdentityId } from "@/lib/voice/types";
+import { getProductionIntroLine } from "@/lib/companion/productionConfig";
 
-export const COMPANION_OPENING: Record<VoiceIdentityId, Record<AppLang, string>> = {
-  fenna: {
-    nl: "Ik ben Fenna. Waar wilt u het over hebben — of zullen we gewoon even praten?",
-    en: "I'm Fenna. What's on your mind — or shall we just chat for a bit?",
-  },
-  maarten: {
-    nl: "Ik ben Maarten. Waar kunt u op dit moment mee — of vertelt u maar waar u aan denkt.",
-    en: "I'm Maarten. What's on your mind — or tell me what you're thinking about.",
-  },
-  peter: {
-    nl: "Ik ben Peter. Fijn dat u er bent — waar wilt u het over hebben vandaag?",
-    en: "I'm Peter. Good to hear you — what would you like to talk about today?",
-  },
-  colette: {
-    nl: "Ik ben Colette, uw gespreksmaatje. Fijn dat u er bent — ik luister graag.",
-    en: "I'm Colette, your conversation partner. Good to hear you — I'm happy to listen.",
-  },
-};
-
+/** Productie-openingszinnen — zie productionCharacters.json */
 export function getCompanionOpening(
   identityId: VoiceIdentityId,
   lang: AppLang,
 ): string {
-  return COMPANION_OPENING[identityId]?.[lang] ?? COMPANION_OPENING.fenna[lang];
+  return getProductionIntroLine(identityId, lang);
 }
+
+/** @deprecated Gebruik getCompanionOpening — behouden voor oude imports. */
+export const COMPANION_OPENING: Record<
+  VoiceIdentityId,
+  Record<AppLang, string>
+> = {
+  fenna: { nl: "Hallo, ik ben Fenna.", en: "Hello, I'm Fenna." },
+  maarten: { nl: "Hallo, ik ben Maarten.", en: "Hello, I'm Maarten." },
+  peter: { nl: "Hallo, ik ben Peter.", en: "Hello, I'm Peter." },
+  colette: { nl: "Hallo, ik ben Colette.", en: "Hello, I'm Colette." },
+};
 
 /** Backward compatible alias. */
 export const FENNA_OPENING: Record<AppLang, string> = COMPANION_OPENING.fenna;

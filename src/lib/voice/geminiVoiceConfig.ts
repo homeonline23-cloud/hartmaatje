@@ -1,5 +1,6 @@
 import type { AppLang } from "@/lib/languages";
 import type { VoiceIdentityId } from "@/lib/voice/types";
+import { getProductionVoiceStyle } from "@/lib/companion/productionConfig";
 
 /** Google Gemini TTS stem per HartMaatje-personage. */
 export const GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts";
@@ -57,7 +58,11 @@ export function getGeminiVoicePrompt(
   text: string,
 ): { voiceName: string; prompt: string } {
   const profile = PROFILES[identityId] ?? PROFILES.fenna;
-  const persona = lang === "en" ? profile.personaEn : profile.personaNl;
+  const voiceStyle = getProductionVoiceStyle(identityId, lang);
+  const persona =
+    lang === "en"
+      ? `${profile.personaEn} Style: ${voiceStyle}.`
+      : `${profile.personaNl} Stijl: ${voiceStyle}.`;
   const lead =
     lang === "en"
       ? `Read aloud in one natural flow (${persona}):\n\n`

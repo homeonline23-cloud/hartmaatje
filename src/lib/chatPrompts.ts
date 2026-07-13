@@ -1,7 +1,6 @@
 import type { AppLang } from "@/lib/languages";
 import type { VoiceIdentityId } from "@/lib/voice/types";
 import { getVoiceIdentity } from "@/lib/voice/registry";
-import fennaNl from "@/lib/liveavatar/contexts/fenna-nl.json";
 import {
   buildCompanionChatPrompt,
   buildCompanionVoicePrompt,
@@ -15,16 +14,10 @@ export function getCompanionSystemPrompt(
   lang: AppLang,
   memoryBlock = "",
 ): string {
-  const base =
-    identityId === "fenna" && lang === "nl" && fennaNl.prompt
-      ? fennaNl.prompt
-      : undefined;
-
   return buildCompanionChatPrompt({
     identityId,
     lang,
     memoryBlock,
-    basePrompt: base,
   });
 }
 
