@@ -20,6 +20,9 @@
 # production
 /build
 
+# local dev voice transcripts (agent debugging)
+.dev/
+
 # misc
 .DS_Store
 *.pem

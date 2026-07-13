@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAppCopy } from "@/lib/appLocale";
 import type { AppLang } from "@/lib/languages";
+import { isAppLang } from "@/lib/languages";
+import { normalizeCoreLang } from "@/lib/languages";
 import { geminiTranscribeAudio } from "@/lib/server/gemini";
 
 type Body = {
@@ -23,11 +25,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: errors.couldNotReadRecording }, { status: 400 });
   }
 
-  const lang: AppLang = body.lang === "en" ? "en" : "nl";
+  const lang: AppLang = body.lang && isAppLang(body.lang) ? body.lang : "nl";
   const text = await geminiTranscribeAudio(
     audio,
     body.mime_type || "audio/webm",
-    lang,
+    normalizeCoreLang(lang),
   );
 
   if (!text) {

@@ -1,9 +1,10 @@
 import { getExtraTurnHints, getVoiceSystemPrompt } from "@/lib/chatPrompts";
 import {
   isExclusivityOrDependencyRequest,
-  replyFailsDependencyBoundary,
+  replyFailsLiveVoiceQuality,
 } from "@/lib/companion/conversationLogic";
 import type { AppLang } from "@/lib/languages";
+import { normalizeCoreLang } from "@/lib/languages";
 import {
   buildVoiceMemoryContext,
   ingestTurnAsync,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/server/gemini";
 import { getVoiceIdentity } from "@/lib/voice/registry";
 import type { VoiceIdentityId } from "@/lib/voice/types";
+import { appendVoiceTranscript } from "@/lib/server/voiceTranscriptLog";
 
 type HistoryItem = { role: "user" | "assistant"; content: string };
 
@@ -79,6 +81,7 @@ export async function runCompanionVoiceTurn(input: {
   identityId?: VoiceIdentityId;
   residentId?: string;
   sessionId?: string;
+  addressForm?: "formeel" | "informeel";
 }): Promise<{
   userText: string;
   reply: string;
@@ -87,10 +90,12 @@ export async function runCompanionVoiceTurn(input: {
 }> {
   const t0 = Date.now();
   const lang = input.lang;
+  const coreLang = normalizeCoreLang(lang);
   const identityId = input.identityId ?? "fenna";
   const voiceCfg = getVoiceGeminiConfig();
   const voiceModel = voiceCfg?.model;
   const characterName = getVoiceIdentity(identityId).displayName;
+  const addressForm = input.addressForm === "informeel" ? "informeel" : "formeel";
   const mimeType = normalizeGeminiAudioMime(input.mimeType);
 
   if (!input.audioBase64?.trim() || input.audioBase64.length < 120) {
@@ -116,18 +121,29 @@ export async function runCompanionVoiceTurn(input: {
     text: h.content,
   }));
 
-  const livePrompt = getVoiceSystemPrompt(identityId, lang, memoryLight.promptBlock, []);
+  const livePrompt =
+    process.env.VOICE_USE_LIVE_PATH === "true"
+      ? getVoiceSystemPrompt(
+          identityId,
+          lang,
+          memoryLight.promptBlock,
+          [],
+          addressForm,
+        )
+      : "";
 
   const [sttRaw, liveResult] = await Promise.all([
-    geminiTranscribeAudio(input.audioBase64, mimeType, lang, voiceModel),
-    geminiLiveVoiceTurn(
-      livePrompt,
-      historyTurns,
-      input.audioBase64,
-      mimeType,
-      lang,
-      characterName,
-    ),
+    geminiTranscribeAudio(input.audioBase64, mimeType, coreLang, voiceModel),
+    process.env.VOICE_USE_LIVE_PATH === "true"
+      ? geminiLiveVoiceTurn(
+          livePrompt,
+          historyTurns,
+          input.audioBase64,
+          mimeType,
+          coreLang,
+          characterName,
+        )
+      : Promise.resolve(null),
   ]);
 
   const tStt = Date.now();
@@ -146,22 +162,25 @@ export async function runCompanionVoiceTurn(input: {
   let path: "live" | "llm" = "llm";
 
   const dependencyTurn = isExclusivityOrDependencyRequest(userText);
+  const useLivePath = process.env.VOICE_USE_LIVE_PATH === "true";
 
   if (
+    useLivePath &&
     liveResult?.reply &&
-    !dependencyTurn &&
     transcriptsAlign(userText, liveResult.userText || userText) &&
     !replyLooksLikeInterrogation(userText, liveResult.reply) &&
-    !replyFailsDependencyBoundary(userText, liveResult.reply, identityId)
+    !replyFailsLiveVoiceQuality(userText, liveResult.reply, identityId)
   ) {
     reply = cleanReply(liveResult.reply);
     path = "live";
   } else {
+    const turnHints = getExtraTurnHints(userText, lang, identityId);
     const systemPrompt = getVoiceSystemPrompt(
       identityId,
       lang,
       memoryLight.promptBlock,
-      getExtraTurnHints(userText, lang, identityId),
+      turnHints,
+      addressForm,
     );
 
     const turns: GeminiTurn[] = [
@@ -169,21 +188,57 @@ export async function runCompanionVoiceTurn(input: {
       { role: "user", text: userText },
     ];
 
-    const aiText = await geminiGenerateText(systemPrompt, turns, {
-      temperature: 0.65,
-      maxOutputTokens: 140,
-      model: voiceModel,
-      fast: true,
-    });
+    const generateOnce = (extraHint?: string, temperature = dependencyTurn ? 0.72 : 0.65) =>
+      geminiGenerateText(
+        extraHint ? `${systemPrompt}\n\n${extraHint}` : systemPrompt,
+        turns,
+        {
+          temperature,
+          maxOutputTokens: 140,
+          model: voiceModel,
+          fast: true,
+        },
+      );
 
-    reply = aiText
-      ? cleanReply(aiText)
-      : lang === "en"
-        ? "I'm listening — could you say that once more?"
-        : "Ik luister — wilt u dat nog een keer zeggen?";
+    let aiText = await generateOnce();
+    reply = aiText ? cleanReply(aiText) : "";
+
+    if (reply && replyFailsLiveVoiceQuality(userText, reply, identityId)) {
+      const retryHint =
+        lang === "en"
+          ? "RETRY: Your last answer missed the point. Reply ONLY to what they just said. No medical sympathy unless they said they feel unwell."
+          : "OPNIEUW: Uw vorige antwoord miste de bedoeling. Antwoord ALLEEN op wat ze net zeiden. Geen medische sympathie tenzij zij zelf zeiden dat ze zich niet goed voelen.";
+      aiText = await generateOnce(retryHint, 0.55);
+      const retryReply = aiText ? cleanReply(aiText) : "";
+      if (retryReply && !replyFailsLiveVoiceQuality(userText, retryReply, identityId)) {
+        reply = retryReply;
+      }
+    }
+
+    if (!reply) {
+      reply =
+        lang === "en"
+          ? "I'm listening — could you say that once more?"
+          : "Ik luister — wilt u dat nog een keer zeggen?";
+    }
   }
 
   const tDone = Date.now();
+
+  void appendVoiceTranscript({
+    kind: "turn",
+    identityId,
+    lang,
+    sessionId: input.sessionId,
+    userText,
+    reply,
+    path,
+    timings_ms: {
+      stt: tStt - t0,
+      llm: path === "live" ? 0 : tDone - tStt,
+      total: tDone - t0,
+    },
+  });
 
   ingestTurnAsync({
     residentId,

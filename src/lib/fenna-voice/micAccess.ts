@@ -1,4 +1,5 @@
 import type { AppLang } from "@/lib/languages";
+import { normalizeCoreLang } from "@/lib/languages";
 import { voiceLog } from "@/lib/fenna-voice/voiceLogger";
 
 export type MicAccessErrorCode =
@@ -18,7 +19,7 @@ export class MicAccessError extends Error {
   }
 }
 
-const MESSAGES: Record<AppLang, Record<MicAccessErrorCode, string>> = {
+const MESSAGES: Record<"nl" | "en", Record<MicAccessErrorCode, string>> = {
   nl: {
     unsupported:
       "Uw browser ondersteunt geen microfoon. Open HartMaatje in Chrome of Edge.",
@@ -46,7 +47,7 @@ const MESSAGES: Record<AppLang, Record<MicAccessErrorCode, string>> = {
 };
 
 export function micErrorMessage(code: MicAccessErrorCode, lang: AppLang): string {
-  return MESSAGES[lang][code];
+  return MESSAGES[normalizeCoreLang(lang)][code];
 }
 
 function mapDomException(err: unknown, lang: AppLang): MicAccessError {

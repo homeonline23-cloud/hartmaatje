@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { friendlyGeminiErrorMessage, isGeminiQuotaError } from "@/lib/geminiErrors";
 import type { AppLang } from "@/lib/languages";
+import { isAppLang } from "@/lib/languages";
 import { jsonApiError } from "@/lib/server/rateLimitResponse";
 import {
   GEMINI_TTS_MODEL,
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
     const identityId = VALID_IDS.has(rawIdentity as VoiceIdentityId)
       ? (rawIdentity as VoiceIdentityId)
       : "fenna";
-    const lang: AppLang = body.lang === "en" ? "en" : "nl";
+    const lang: AppLang = body.lang && isAppLang(body.lang) ? body.lang : "nl";
     const { prompt } = getGeminiVoicePrompt(identityId, lang, text);
     const voiceCandidates = getFemaleTtsVoiceFallbacks(identityId);
 
@@ -75,7 +76,16 @@ export async function POST(req: Request) {
         config: {
           responseModalities: ["AUDIO"],
           speechConfig: {
-            languageCode: lang === "en" ? "en-US" : "nl-NL",
+            languageCode:
+              lang === "nl"
+                ? "nl-NL"
+                : lang === "de"
+                  ? "de-DE"
+                  : lang === "fr"
+                    ? "fr-FR"
+                    : lang === "es"
+                      ? "es-ES"
+                      : "en-US",
             voiceConfig: {
               prebuiltVoiceConfig: { voiceName },
             },

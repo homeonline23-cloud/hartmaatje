@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AvatarPortrait } from "@/components/AvatarPortrait";
 import { companionMediaBackdropClass, companionShellClass, companionStartButtonClass, MicGlyph } from "@/components/ui";
+import { WelcomeVideoFrame } from "@/components/WelcomeVideoFrame";
+import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { getCompanionOpening } from "@/lib/companion/openings";
 import {
@@ -19,7 +21,7 @@ import {
 import { playCompanionReply, speakCompanionLine } from "@/lib/fenna-voice/speakFennaLine";
 import { logTurnTimings, type TurnTimings } from "@/lib/fenna-voice/turnTiming";
 import { MicAccessError } from "@/lib/fenna-voice/micAccess";
-import { voiceLog } from "@/lib/fenna-voice/voiceLogger";
+import { logVoiceTranscriptLine, voiceLog } from "@/lib/fenna-voice/voiceLogger";
 import {
   beginCompanionVoiceSession,
   endCompanionVoiceSession,
@@ -48,6 +50,7 @@ export function CompanionVoiceSession({
   onBack,
 }: CompanionVoiceSessionProps) {
   const { copy, app, lang } = useLanguage();
+  const { profile } = useAuth();
   const character = getVoiceIdentity(identityId);
   const displayName = character.displayName;
   const welcomeVideoSrc = getWelcomeVideoUrl(identityId);
@@ -72,6 +75,14 @@ export function CompanionVoiceSession({
   const speakingRef = useRef(false);
   const welcomeVideoRef = useRef<HTMLVideoElement>(null);
   const sessionGenRef = useRef(0);
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  const addressFormRef = useRef<"formeel" | "informeel">("formeel");
+  const ttsWarnedRef = useRef(false);
+
+  useEffect(() => {
+    addressFormRef.current =
+      profile?.address_form === "informeel" ? "informeel" : "formeel";
+  }, [profile?.address_form]);
 
   useEffect(() => {
     identityRef.current = identityId;
@@ -85,6 +96,7 @@ export function CompanionVoiceSession({
     setMessages([]);
     setError(null);
     setTtsWarning(null);
+    ttsWarnedRef.current = false;
     setMicLive(false);
     setRecording(false);
   }, [identityId]);
@@ -112,6 +124,8 @@ export function CompanionVoiceSession({
 
   useEffect(() => {
     messagesRef.current = messages;
+    const el = transcriptRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   useEffect(() => {
@@ -148,6 +162,7 @@ export function CompanionVoiceSession({
         sid,
         residentIdRef.current,
         identityRef.current,
+        addressFormRef.current,
       );
       if (!isCompanionVoiceSessionActive(gen)) return;
       timings.apiEndAt = Date.now();
@@ -182,9 +197,10 @@ export function CompanionVoiceSession({
           gen,
         );
       } catch (ttsErr) {
-        if (isTtsQuotaFailure(ttsErr)) {
+        if (isTtsQuotaFailure(ttsErr) && !ttsWarnedRef.current) {
+          ttsWarnedRef.current = true;
           setTtsWarning(getTtsErrorMessage(ttsErr));
-        } else {
+        } else if (!isTtsQuotaFailure(ttsErr)) {
           throw ttsErr;
         }
       }
@@ -213,6 +229,7 @@ export function CompanionVoiceSession({
   const startSession = useCallback(async () => {
     setError(null);
     setTtsWarning(null);
+    ttsWarnedRef.current = false;
     setMicWarning(null);
     setMicLevel(0);
     setMessages([]);
@@ -251,6 +268,13 @@ export function CompanionVoiceSession({
 
       const opening = getCompanionOpening(identityRef.current, lang);
       addMessage("assistant", opening);
+      logVoiceTranscriptLine({
+        identityId: identityRef.current,
+        lang,
+        role: "assistant",
+        text: opening,
+        sessionId: sessionIdRef.current,
+      });
 
       const listener = new ContinuousListener({
         lang,
@@ -282,9 +306,10 @@ export function CompanionVoiceSession({
       try {
         await speakCompanionLine(opening, lang, identityRef.current, gen);
       } catch (ttsErr) {
-        if (isTtsQuotaFailure(ttsErr)) {
+        if (isTtsQuotaFailure(ttsErr) && !ttsWarnedRef.current) {
+          ttsWarnedRef.current = true;
           setTtsWarning(getTtsErrorMessage(ttsErr));
-        } else {
+        } else if (!isTtsQuotaFailure(ttsErr)) {
           throw ttsErr;
         }
       }
@@ -332,6 +357,7 @@ export function CompanionVoiceSession({
     setPhase("idle");
     setError(null);
     setTtsWarning(null);
+    ttsWarnedRef.current = false;
     voiceLog("session ended");
   }, []);
 
@@ -388,14 +414,16 @@ export function CompanionVoiceSession({
           </button>
         </div>
         <div className={`flex min-h-[36vh] max-h-[58vh] items-center justify-center ${companionMediaBackdropClass}`}>
-          <video
-            ref={welcomeVideoRef}
-            src={welcomeVideoSrc}
-            className="max-h-[58vh] w-full object-contain"
-            playsInline
-            autoPlay
-            onEnded={closeWelcome}
-          />
+          <WelcomeVideoFrame className="h-full w-full max-h-[58vh]">
+            <video
+              ref={welcomeVideoRef}
+              src={welcomeVideoSrc}
+              className="max-h-[58vh] w-full object-contain"
+              playsInline
+              autoPlay
+              onEnded={closeWelcome}
+            />
+          </WelcomeVideoFrame>
         </div>
         <p className="shrink-0 px-4 py-3 text-center text-lg font-semibold text-white/90">
           {displayName}
@@ -408,33 +436,35 @@ export function CompanionVoiceSession({
     <div className="shrink-0 overflow-hidden border-b border-[#e8dfd0]/55">
       <div
         className={`relative flex w-full items-center justify-center ${companionMediaBackdropClass} ${
-          sessionActive ? "h-28 sm:h-32" : "h-32 sm:h-36"
+          sessionActive ? "h-16 sm:h-20" : "h-28 sm:h-32"
         } ${
-          phase === "speaking" ? "ring-4 ring-inset ring-[#5aabaa]/40" : ""
-        } ${phase === "listening" && micLive ? "ring-4 ring-inset ring-[#c45c3e]/25" : ""}`}
+          phase === "speaking" ? "ring-2 ring-inset ring-[#5aabaa]/40" : ""
+        } ${phase === "listening" && micLive ? "ring-2 ring-inset ring-[#c45c3e]/25" : ""}`}
       >
         <AvatarPortrait
           identityId={identityId}
           displayName={displayName}
-          size={sessionActive ? "md" : "lg"}
-          className="border-4 border-white shadow-lg"
+          size={sessionActive ? "sm" : "md"}
+          className="border-2 border-white shadow-md"
         />
       </div>
-      <p className="bg-[#faf6f0] px-4 py-1.5 text-center text-lg font-bold text-[#2c4a22] sm:text-xl">
-        {displayName}
-      </p>
+      {!sessionActive ? (
+        <p className="bg-[#faf6f0] px-3 py-1 text-center text-base font-bold text-[#2c4a22]">
+          {displayName}
+        </p>
+      ) : null}
     </div>
   );
 
   const cardShellClass =
-    "flex max-h-[calc(100dvh-6.5rem)] flex-col rounded-3xl border border-[#f8f2e8]/70 bg-[#faf6f0]/95 shadow-[0_18px_44px_rgba(44,36,22,0.2)] backdrop-blur-md sm:max-h-[calc(100dvh-5rem)]";
+    "flex max-h-[calc(100dvh-4.5rem)] flex-col rounded-2xl border border-[#f8f2e8]/70 bg-[#faf6f0]/95 shadow-[0_12px_32px_rgba(44,36,22,0.18)] backdrop-blur-md sm:max-h-[calc(100dvh-4rem)]";
 
   const activeFooter = (
-    <div className="shrink-0 border-t border-[#e8dfd0]/55 bg-[#faf6f0] px-4 py-3">
+    <div className="shrink-0 border-t border-[#e8dfd0]/55 bg-[#faf6f0] px-3 py-2">
       {ttsWarning ? (
         <p
           role="status"
-          className="mb-3 rounded-2xl border border-[#d8a574] bg-[#fff8ee] px-4 py-3 text-base text-[#6b4a2a]"
+          className="mb-2 rounded-xl border border-[#d8a574] bg-[#fff8ee] px-3 py-2 text-sm text-[#6b4a2a]"
         >
           {ttsWarning}
         </p>
@@ -442,74 +472,76 @@ export function CompanionVoiceSession({
       {error ? (
         <p
           role="alert"
-          className="mb-3 rounded-2xl border border-[#d8a574] bg-[#fff8ee] px-4 py-3 text-lg text-[#6b4a2a]"
+          className="mb-2 rounded-xl border border-[#d8a574] bg-[#fff8ee] px-3 py-2 text-sm text-[#6b4a2a]"
         >
           {error}
         </p>
       ) : null}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div
-          className={`flex flex-col items-center gap-2 rounded-2xl border-2 px-4 py-3 ${
+          className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${
             micLive
               ? "border-[#c45c3e]/40 bg-[#fff5ee]/60"
               : "border-[#5aabaa]/40 bg-[#eef8f7]/60"
           }`}
         >
           <MicGlyph
-            className={`h-9 w-9 ${micLive ? "text-[#c45c3e]" : "text-[#2d5a55]"}`}
+            className={`h-6 w-6 shrink-0 ${micLive ? "text-[#c45c3e]" : "text-[#2d5a55]"}`}
           />
-          <p className="text-center text-base font-medium text-[#5c4a32] sm:text-lg">
-            {micLive
-              ? recording
-                ? lang === "en"
-                  ? "I'm listening…"
-                  : "Ik luister naar u…"
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-[#5c4a32]">
+              {micLive
+                ? recording
+                  ? lang === "en"
+                    ? "Listening…"
+                    : "Ik luister…"
+                  : lang === "en"
+                    ? "Mic on — speak anytime"
+                    : "Microfoon aan"
                 : lang === "en"
-                  ? "Microphone on — speak whenever you like"
-                  : "Microfoon aan — praat gerust"
-              : lang === "en"
-                ? "Please wait…"
-                : "Even wachten…"}
-          </p>
-          {micLive ? (
-            <div className="w-full max-w-xs">
-              <div className="h-2.5 overflow-hidden rounded-full bg-[#e8dfd0]">
+                  ? "Please wait…"
+                  : "Even wachten…"}
+            </p>
+            {micLive ? (
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#e8dfd0]">
                 <div
                   className="h-full rounded-full bg-[#05381F] transition-[width] duration-75"
                   style={{ width: `${Math.min(100, Math.round(micLevel * 4))}%` }}
                 />
               </div>
-            </div>
-          ) : null}
-          {micWarning ? (
-            <p
-              role="alert"
-              className="rounded-xl border border-[#d8a574] bg-[#fff8ee] px-3 py-2 text-sm text-[#6b4a2a]"
-            >
-              {micWarning}
-            </p>
-          ) : null}
+            ) : null}
+          </div>
         </div>
+        {micWarning ? (
+          <p
+            role="alert"
+            className="rounded-lg border border-[#d8a574] bg-[#fff8ee] px-2 py-1.5 text-xs text-[#6b4a2a]"
+          >
+            {micWarning}
+          </p>
+        ) : null}
 
-        <button
-          type="button"
-          onClick={() => endSession()}
-          className="w-full rounded-2xl border-2 border-[#8a7a66] bg-white px-4 py-3 text-lg font-semibold"
-        >
-          {lang === "en" ? "End conversation" : "Gesprek beëindigen"}
-        </button>
-        {onBack ? (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button
             type="button"
-            onClick={() => {
-              endSession();
-              onBack();
-            }}
-            className="w-full rounded-2xl border-2 border-[#d8ccb8] bg-[#f5f0e8] px-4 py-3 text-lg font-semibold text-[#5c4a32]"
+            onClick={() => endSession()}
+            className="rounded-xl border border-[#8a7a66] bg-white px-3 py-2 text-sm font-semibold"
           >
-            {lang === "en" ? "← Choose another companion" : "← Kies ander maatje"}
+            {lang === "en" ? "End conversation" : "Gesprek beëindigen"}
           </button>
-        ) : null}
+          {onBack ? (
+            <button
+              type="button"
+              onClick={() => {
+                endSession();
+                onBack();
+              }}
+              className="rounded-xl border border-[#d8ccb8] bg-[#f5f0e8] px-3 py-2 text-sm font-semibold text-[#5c4a32]"
+            >
+              {lang === "en" ? "← Other maatje" : "← Ander maatje"}
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -570,7 +602,7 @@ export function CompanionVoiceSession({
       <div
         role="status"
         aria-live="polite"
-        className={`shrink-0 border-b border-[#e8dfd0]/55 px-5 py-2.5 text-center text-lg font-semibold sm:text-xl ${
+        className={`shrink-0 border-b border-[#e8dfd0]/55 px-3 py-1.5 text-center text-sm font-semibold ${
           phase === "listening"
             ? "bg-[#fff5ee] text-[#8b4a2a]"
             : phase === "thinking" || phase === "speaking" || phase === "starting"
@@ -583,24 +615,31 @@ export function CompanionVoiceSession({
 
       {portraitPanel}
 
-      {messages.length > 0 ? (
-        <div className="min-h-0 flex-1 overflow-y-auto border-b border-[#e8dfd0]/40 px-5 py-2.5">
-          <div className="space-y-2.5">
+      <div
+        ref={transcriptRef}
+        className="min-h-0 flex-1 overflow-y-auto px-3 py-2"
+      >
+        {messages.length > 0 ? (
+          <div className="space-y-2">
             {messages.map((m) => (
               <div key={m.id}>
-                <p className="text-sm font-medium text-[#8a7a66]">
+                <p className="text-xs font-medium text-[#8a7a66]">
                   {m.role === "user" ? app.chat.userSaidLabel : displayName}
                 </p>
-                <p className="mt-1 rounded-2xl bg-white px-4 py-2 text-base text-[#2c2416]">
+                <p className="mt-0.5 rounded-xl bg-white px-3 py-2 text-sm leading-relaxed text-[#2c2416]">
                   {m.content}
                 </p>
               </div>
             ))}
           </div>
-        </div>
-      ) : (
-        <div className="min-h-0 flex-1" aria-hidden="true" />
-      )}
+        ) : (
+          <p className="py-2 text-center text-sm text-[#8a7a66]">
+            {lang === "en"
+              ? "Your conversation appears here."
+              : "Uw gesprek verschijnt hier."}
+          </p>
+        )}
+      </div>
 
       {activeFooter}
     </div>

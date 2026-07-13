@@ -13,7 +13,7 @@ export function getCompanionOpening(
 /** @deprecated Gebruik getCompanionOpening — behouden voor oude imports. */
 export const COMPANION_OPENING: Record<
   VoiceIdentityId,
-  Record<AppLang, string>
+  Record<"nl" | "en", string>
 > = {
   fenna: { nl: "Hallo, ik ben Fenna.", en: "Hello, I'm Fenna." },
   maarten: { nl: "Hallo, ik ben Maarten.", en: "Hello, I'm Maarten." },
@@ -22,4 +22,4 @@ export const COMPANION_OPENING: Record<
 };
 
 /** Backward compatible alias. */
-export const FENNA_OPENING: Record<AppLang, string> = COMPANION_OPENING.fenna;
+export const FENNA_OPENING: Record<"nl" | "en", string> = COMPANION_OPENING.fenna;

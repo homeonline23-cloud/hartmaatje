@@ -154,7 +154,7 @@ export function LanguagePicker({
       : null;
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative min-w-0 ${className}`}>
       <button
         ref={buttonRef}
         type="button"
@@ -169,7 +169,7 @@ export function LanguagePicker({
           "rounded-2xl border-2 border-white/70 bg-white/95 px-4 py-2.5 text-lg font-bold text-[#4a6741] shadow-md transition hover:bg-white"
         }
       >
-        🌐 {copy.langPickerButton}
+        <span className="truncate">🌐 {copy.langPickerButton}</span>
       </button>
       {panel}
     </div>

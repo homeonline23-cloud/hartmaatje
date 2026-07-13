@@ -4,11 +4,13 @@ import {
   forgetResident,
 } from "@/lib/memory/orchestrator";
 import type { AppLang } from "@/lib/languages";
+import { isAppLang } from "@/lib/languages";
 
 /** GET: preview memory for a resident. DELETE: forget all memory for a resident. */
 export async function GET(req: NextRequest) {
   const residentId = req.nextUrl.searchParams.get("resident_id")?.trim() || "guest";
-  const lang: AppLang = req.nextUrl.searchParams.get("lang") === "en" ? "en" : "nl";
+  const rawLang = req.nextUrl.searchParams.get("lang")?.trim();
+  const lang: AppLang = rawLang && isAppLang(rawLang) ? rawLang : "nl";
   const sessionId = req.nextUrl.searchParams.get("session_id")?.trim() || undefined;
 
   const memory = buildMemoryContext({ residentId, lang, sessionId });

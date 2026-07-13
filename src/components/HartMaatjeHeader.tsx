@@ -4,12 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LanguagePicker } from "@/components/LanguagePicker";
+import { HartmaatjeBrandTitle } from "@/components/HartmaatjeBrandTitle";
 import { LogoRainbowHalo } from "@/components/LogoRainbowHalo";
 import { useLanguage } from "@/context/LanguageContext";
 import { useHomeCompanionOptional } from "@/context/HomeCompanionContext";
 
 const navBtn =
-  "flex min-h-12 flex-1 min-w-0 items-center justify-center rounded-2xl px-2 py-3 text-center text-base font-bold leading-tight touch-manipulation active:scale-[0.98] transition";
+  "flex h-12 w-full min-w-0 items-center justify-center rounded-2xl px-1.5 py-2 text-center text-sm font-bold leading-tight touch-manipulation active:scale-[0.98] transition sm:px-2 sm:text-base";
+
+const navActive =
+  "bg-white text-[#3f6339] shadow-[0_8px_18px_rgba(255,255,255,0.28)] ring-2 ring-white/60";
+const navIdle =
+  "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)] hover:bg-white/28";
 
 export function HartMaatjeHeader() {
   const pathname = usePathname();
@@ -19,7 +25,12 @@ export function HartMaatjeHeader() {
     { href: "/", label: copy.navHome },
     { href: "/app/geheugen", label: copy.navMemory },
     { href: "/app/instellingen", label: copy.navSettings },
+    { href: "/app/over", label: copy.navAbout },
+    { href: "/app/prijzen", label: copy.navPricing },
   ] as const;
+
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   const companion = useHomeCompanionOptional();
 
@@ -47,56 +58,31 @@ export function HartMaatjeHeader() {
               width={128}
               height={128}
               unoptimized
-              className="h-32 w-32 object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.25)]"
+              className="h-32 w-32 object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.48),0_0_26px_rgba(255,255,255,0.22)]"
               priority
             />
-            <span className="text-xl font-bold text-white drop-shadow-md sm:text-2xl">
-              HartMaatje
-            </span>
+            <HartmaatjeBrandTitle variant="header" />
           </Link>
         </div>
 
-        <nav className="mt-4 w-full space-y-2" aria-label={app.header.mainNavAria}>
-          <div className="flex w-full gap-2">
-            {navItems.slice(0, 3).map((item) => {
-              const active =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={
-                    item.href === "/" ? (e) => goCleanHome(e) : undefined
-                  }
-                  className={`${navBtn} ${
-                    active
-                      ? "bg-white text-[#3f6339] shadow-[0_8px_18px_rgba(255,255,255,0.28)] ring-2 ring-white/60"
-                      : "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)] hover:bg-white/28"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-          <div className="flex w-full gap-2">
+        <nav
+          className="mt-4 grid w-full grid-cols-3 gap-2"
+          aria-label={app.header.mainNavAria}
+        >
+          {navItems.map((item) => (
             <Link
-              href="/app/over"
-              className={`${navBtn} ${
-                pathname.startsWith("/app/over")
-                  ? "bg-white text-[#3f6339] shadow-[0_8px_18px_rgba(255,255,255,0.28)] ring-2 ring-white/60"
-                  : "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)] hover:bg-white/28"
-              }`}
+              key={item.href}
+              href={item.href}
+              onClick={item.href === "/" ? (e) => goCleanHome(e) : undefined}
+              className={`${navBtn} ${isActive(item.href) ? navActive : navIdle}`}
             >
-              {copy.navAbout}
+              {item.label}
             </Link>
-            <LanguagePicker
-              className="flex flex-1 min-w-0"
-              buttonClassName={`${navBtn} w-full bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)] hover:bg-white/28`}
-            />
-          </div>
+          ))}
+          <LanguagePicker
+            className="min-w-0"
+            buttonClassName={`${navBtn} ${navIdle}`}
+          />
         </nav>
       </div>
     </header>

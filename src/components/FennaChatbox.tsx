@@ -260,8 +260,8 @@ export function FennaChatbox() {
           </p>
           <p className="text-center text-lg text-[#5c4a32] sm:text-xl">
             {lang === "en"
-              ? "Your calm conversation partner — powered by Gemini."
-              : "Uw rustige gespreksmaatje — met Gemini."}
+              ? "Your calm maatje to talk with."
+              : "Uw rustige maatje om mee te praten."}
           </p>
         </div>
       </div>

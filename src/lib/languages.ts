@@ -1,5 +1,5 @@
 /** Ondersteunde UI-talen — later uitbreidbaar (de, fr, es, …). */
-export type AppLang = "nl" | "en";
+export type AppLang = "nl" | "en" | "de" | "fr" | "es";
 
 export type LanguageOption = {
   id: AppLang;
@@ -12,6 +12,9 @@ export type LanguageOption = {
 export const SUPPORTED_LANGUAGES: readonly LanguageOption[] = [
   { id: "nl", nativeLabel: "Nederlands", voiceLocale: "nl-NL" },
   { id: "en", nativeLabel: "English", voiceLocale: "en-US" },
+  { id: "de", nativeLabel: "Deutsch", voiceLocale: "de-DE" },
+  { id: "fr", nativeLabel: "Français", voiceLocale: "fr-FR" },
+  { id: "es", nativeLabel: "Español", voiceLocale: "es-ES" },
 ] as const;
 
 export const DEFAULT_APP_LANG: AppLang = "nl";
@@ -58,10 +61,18 @@ export function parseAppLang(value: string | null | undefined): AppLang | null {
 export function detectBrowserAppLang(): AppLang {
   if (typeof navigator === "undefined") return DEFAULT_APP_LANG;
   const locale = navigator.language?.toLowerCase() ?? "";
+  if (locale.startsWith("de")) return "de";
+  if (locale.startsWith("fr")) return "fr";
+  if (locale.startsWith("es")) return "es";
   if (locale.startsWith("en")) return "en";
   return "nl";
 }
 
 export function resolveAppLang(): AppLang {
   return loadSavedAppLang() ?? detectBrowserAppLang();
+}
+
+/** Voor prompts/STT in deze codebase gebruiken we voorlopig NL of EN. */
+export function normalizeCoreLang(lang: AppLang): "nl" | "en" {
+  return lang === "nl" ? "nl" : "en";
 }

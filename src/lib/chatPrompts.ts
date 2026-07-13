@@ -27,12 +27,14 @@ export function getVoiceSystemPrompt(
   lang: AppLang,
   memoryBlock = "",
   extraHints: string[] = [],
+  addressForm: "formeel" | "informeel" = "formeel",
 ): string {
   return buildCompanionVoicePrompt({
     identityId,
     lang,
     memoryBlock,
     extraHints: [getVoiceTimeContext(lang), ...extraHints],
+    addressForm,
   });
 }
 

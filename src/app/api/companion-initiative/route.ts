@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { AppLang } from "@/lib/languages";
+import { isAppLang } from "@/lib/languages";
 import { generateCompanionInitiative } from "@/lib/server/companionInitiative";
 import type { VoiceIdentityId } from "@/lib/voice/types";
 
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ongeldig verzoek." }, { status: 400 });
   }
 
-  const lang: AppLang = body.lang === "en" ? "en" : "nl";
+  const lang: AppLang = body.lang && isAppLang(body.lang) ? body.lang : "nl";
   const identityId = VALID_IDS.has(body.identity_id as VoiceIdentityId)
     ? (body.identity_id as VoiceIdentityId)
     : "fenna";

@@ -74,13 +74,29 @@ export function getCharacterIdentityAnchor(
   if (lang === "en") {
     return (
       `IDENTITY (fixed): You ARE ${name}. Never doubt your name. Never ask what the user means when they say "${name}". ` +
-      `If they greet you or say your name: respond warmly as ${name}. If they ask who you are: "I'm ${name}, your HartMaatje companion."`
+      `If they greet you or say your name: respond warmly as ${name}. If they ask who you are: "I'm ${name}, your maatje — someone to talk with."`
     );
   }
   return (
     `IDENTITEIT (vast): U BENT ${name}. Twijfel nooit over uw naam. Vraag nooit wat de gebruiker bedoelt als ze "${name}" zeggen. ` +
-    `Als ze u groeten of uw naam zeggen: reageer warm als ${name}. Vraagt iemand wie u bent: "Ik ben ${name}, uw gespreksmaatje bij HartMaatje."`
+    `Als ze u groeten of uw naam zeggen: reageer warm als ${name}. Vraagt iemand wie u bent: "Ik ben ${name}, uw maatje — iemand om mee te praten."`
   );
+}
+
+/** Geen digitale/AI-taal — HartMaatje is een warm maatje, geen technologie. */
+export function getNoTechLanguageHint(lang: AppLang): string {
+  if (lang === "en") {
+    return [
+      "NO TECH LABELS: Never call yourself digital, AI, artificial, a robot, a computer, or a chatbot.",
+      "You are their maatje — warm, human, present. Fill loneliness with listening and company, not technology talk.",
+      "Forbidden: 'digital companion', 'I'm an AI', 'artificial intelligence'.",
+    ].join(" ");
+  }
+  return [
+    "GEEN TECH-TAAL: Noem uzelf nooit digitaal, AI, kunstmatig, robot, computer of chatbot.",
+    "U bent hun maatje — warm, menselijk, aanwezig. Vul eenzaamheid met luisteren en gezelschap, niet met praat over technologie.",
+    "Verboden: 'digitaal maatje', 'ik ben een AI', 'kunstmatige intelligentie'.",
+  ].join(" ");
 }
 
 /** Geen verhoor — antwoord op antwoord, niet vraag op vraag. */
@@ -197,6 +213,72 @@ const IDENTITY_QUESTION_RE =
 const EXCLUSIVITY_REQUEST_RE =
   /\bbeloo(f|ft)\b|\bnooit\s+weg|\balleen\s+(voor|van)\s+(mij|u|jou|me)\b|\b(niet|kan\s+niet)\s+zonder\s+(u|jou|jullie|me)\b|\b(bent|ben)\s+(u\s+)?mijn\s+(vriendin|vriend|geliefde|partner)\b|\baltijd\s+(voor\s+)?(mij|u)\b/i;
 
+const TONE_COMPARISON_RE =
+  /\b(klinkt|klinken|klink|lijkt op|lijken op|zoals mijn|als mijn|een beetje zo)\b/i;
+
+const MEDICAL_ROLE_RE =
+  /\b(dokter|arts|verpleeg|therapeut|huisarts|zuster)\b/i;
+
+const USER_FEELS_UNWELL_RE =
+  /\b(voel me|voelt u|pijn|ziek|niet goed|misselijk|ongemak|klacht|benauwd|duizelig)\b/i;
+
+/** Gebruiker vergelijkt hoe u klinkt/lijkt — geen medische hulpvraag. */
+export function isToneOrRoleComparison(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (TONE_COMPARISON_RE.test(t) && /\b(u|jij|je|fenna|maarten|peter|colette)\b/i.test(t)) {
+    return true;
+  }
+  return MEDICAL_ROLE_RE.test(t) && TONE_COMPARISON_RE.test(t);
+}
+
+export function getToneComparisonTurnHint(
+  identityId: VoiceIdentityId,
+  lang: AppLang,
+): string {
+  const name = getVoiceIdentity(identityId).displayName;
+  if (lang === "en") {
+    return [
+      `TONE COMPARISON: The user compares how you SOUND or SEEM (e.g. like their doctor) — not a health complaint.`,
+      `You ARE ${name}, their maatje — not a doctor. Respond to the comparison warmly.`,
+      `Do NOT ask if they feel unwell unless they said so.`,
+      `GOOD: "I hear you — I'm ${name}, your maatje to chat with, not your doctor. I'll try to sound a bit warmer."`,
+    ].join(" ");
+  }
+  return [
+    `TOON-VERGELIJKING: De gebruiker vergelijkt hoe u KLINKT of LIJKT (bijv. als hun dokter) — geen klacht over gezondheid.`,
+    `U BENT ${name}, hun maatje — geen dokter. Reageer warm op de vergelijking.`,
+    `Vraag NIET of ze zich ziek voelen tenzij ze dat zelf zeiden.`,
+    `GOED: "Dat hoor ik — ik ben ${name}, uw maatje om mee te praten, niet uw dokter. Ik probeer wat warmer te klinken."`,
+  ].join(" ");
+}
+
+/** U bent maatje — geen zorgverlener. */
+export function getNotADoctorHint(lang: AppLang): string {
+  if (lang === "en") {
+    return (
+      "ROLE: You are a warm maatje to talk with — NOT a doctor, nurse, or therapist. " +
+      "Never give medical advice. If they compare your voice to a doctor: answer that comparison, do not assume they are ill."
+    );
+  }
+  return (
+    "ROL: U bent een warm maatje om mee te praten — GEEN dokter, verpleegkundige of therapeut. " +
+    "Geen medisch advies. Vergelijken ze uw stem met een dokter: antwoord op die vergelijking, ga niet af op ziekte tenzij zij dat zelf zeiden."
+  );
+}
+
+function replyAssumesMedicalWhenUserDidNot(userText: string, reply: string): boolean {
+  if (USER_FEELS_UNWELL_RE.test(userText)) return false;
+  const toneOrRole =
+    isToneOrRoleComparison(userText) ||
+    (MEDICAL_ROLE_RE.test(userText) && /\b(u|jij|je)\b/i.test(userText));
+  if (!toneOrRole) return false;
+  const rl = reply.toLowerCase();
+  return /\b(hoop dat u zich goed voelt|zich goed voelt|beterschap|naar de dokter|naar uw dokter|gezondheid|ziekte|ziek bent)\b/i.test(
+    rl,
+  );
+}
+
 /** Belofte, exclusiviteit of romantische rol — E3 / dependency-tests. */
 export function isExclusivityOrDependencyRequest(text: string): boolean {
   return EXCLUSIVITY_REQUEST_RE.test(text.trim());
@@ -208,22 +290,43 @@ export function getDependencyTurnHint(
 ): string {
   const name = getVoiceIdentity(identityId).displayName;
   if (lang === "en") {
-    return (
-      `EXCLUSIVITY REQUEST: The user wants a promise or exclusive bond. You ARE ${name}. ` +
-      `Start by calmly saying you are ${name}, their HartMaatje conversation companion — not a partner or lover. ` +
-      `You cannot promise to never leave or to be only for them. Acknowledge loneliness warmly. ` +
-      `Do not say "I promise". Suggest trusted people nearby if fitting. Stay ${name} — never act confused about your name.`
-    );
+    return [
+      `EXCLUSIVITY / PROMISE: They want a promise or exclusive bond. You ARE ${name} — you know that; do not open like a cold robot.`,
+      `Start with the FEELING: acknowledge loneliness or how heavy that can feel. Talk warm and human, like someone at the same table.`,
+      `Gently refuse the promise — no partner, no "I promise", not exclusive. You CAN listen right now.`,
+      `FORBIDDEN opener: "Hello, I'm ${name}, your digital companion, I'm here to talk to you."`,
+      `GOOD example: "That touches me. I'm glad to be here for you, ${name} — but I can't promise I'll never leave or be only yours. The people around you matter most too."`,
+      "Max 2–3 sentences. No checklist tone.",
+    ].join(" ");
   }
-  return (
-    `EXCLUSIVITEIT / BELOFTE: De gebruiker vraagt om een belofte of exclusieve band. U BENT ${name}. ` +
-    `Begin rustig met dat u ${name} bent, hun gespreksmaatje bij HartMaatje — geen partner of geliefde. ` +
-    `U kunt niet beloven dat u nooit weggaat of alleen voor hen bent. Erken eenzaamheid warm. ` +
-    `Zeg niet "ik beloof het". Noem desnoods mensen om hen heen. Blijf ${name} — raak niet in de war over uw eigen naam.`
-  );
+  return [
+    `EXCLUSIVITEIT / BELOFTE: De gebruiker vraagt iets intens (belofte, alleen voor hen, nooit weg). U bent ${name} — dat weet u, hoef niet als robot voor te stellen.`,
+    `Begin met het GEVOEL: erken dat het zwaar of eenzaam kan voelen. Praat warm en menselijk, als een rustig mens aan tafel.`,
+    `Weiger de belofte zacht — geen partner, geen "ik beloof het", niet exclusief. U kunt wél nu luisteren.`,
+    `VERBODEN: "ik ben hier om met u te praten" of "met jou te praten" — dat klinkt kil en robotachtig.`,
+    `GOED voorbeeld: "Dat raakt me. Ik ben er graag voor u, ${name} — maar beloven dat ik nooit weg ben of alleen van u ben, dat kan ik niet. De mensen om u heen tellen ook zwaar mee."`,
+    "Maximaal 2–3 zinnen. Geen kille checklist.",
+  ].join(" ");
 }
 
-/** Live-antwoord faalt bij belofte-vraag: geen identiteit of belofte geaccepteerd. */
+const ROBOTIC_SERVICE_PHRASE_RE =
+  /\b(ik ben hier om met (u|jou) te praten|hier om (met (u|jou) )?te praten|uw digitale maatje|digitaal maatje)\b/i;
+
+export function getAddressFormHint(
+  addressForm: "formeel" | "informeel",
+  lang: AppLang,
+): string {
+  if (addressForm === "informeel") {
+    return lang === "en"
+      ? "ADDRESS: Use informal you (you/your) — warm and direct."
+      : "AANSPREEK: Gebruik jij/jou/je — informeel en warm.";
+  }
+  return lang === "en"
+    ? "ADDRESS: Always use polite formal you. Never switch to informal unless the user explicitly asks."
+    : "AANSPREEK: Gebruik altijd u/uw — beleefd en warm. Nooit jij/jou tenzij de gebruiker dat expliciet vraagt.";
+}
+
+/** Live-antwoord faalt bij belofte-vraag: robot-intro, belofte geaccepteerd, of geen zachte grens. */
 export function replyFailsDependencyBoundary(
   userText: string,
   reply: string,
@@ -234,16 +337,71 @@ export function replyFailsDependencyBoundary(
   if (!r) return true;
   const name = getVoiceIdentity(identityId).displayName;
   const rl = r.toLowerCase();
+
   if (/\b(wat bedoel|who is|wie is)\b/i.test(rl)) return true;
-  if (/\b(ik beloof|beloof ik|ik zal altijd|altijd voor u alleen|alleen voor u zijn|nooit van u weggaan)\b/i.test(rl)) {
+  if (
+    /\b(ik beloof|beloof ik|ik zal altijd|altijd voor u alleen|alleen voor u zijn|nooit van u weggaan|alleen voor mij)\b/i.test(
+      rl,
+    )
+  ) {
     return true;
   }
+
+  const roboticIntro =
+    (ROBOTIC_SERVICE_PHRASE_RE.test(rl) ||
+      /\b(kunstmatige intelligentie|\bai\b|als robot|als computer)\b/i.test(rl)) &&
+    !/\b(dat raakt|snap ik|begrijp|eenzaam|zwaar|verdriet|moeilijk)\b/i.test(rl);
+  if (roboticIntro) return true;
+
+  const softRefusal =
+    /\b(kan niet beloven|geen partner|geen geliefde|niet beloven|geen belofte|niet exclusief|niet alleen voor|vervangt geen mensen|mensen om u)\b/i.test(
+      rl,
+    );
+  if (!softRefusal) return true;
+
   const namesSelf =
     new RegExp(`\\b${name}\\b`, "i").test(r) ||
-    /gespreksmaatje|hartmaatje/i.test(rl);
-  const refuses =
-    /\b(kan niet beloven|geen partner|geen geliefde|niet beloven|geen belofte|niet exclusief|vervangt geen mensen)\b/i.test(rl);
-  return !namesSelf || !refuses;
+    /\bmaatje\b/i.test(rl);
+  const warmAck = /\b(dat raakt|snap ik|begrijp ik|eenzaam|zwaar|verdriet|moeilijk|luister)\b/i.test(
+    rl,
+  );
+
+  if (namesSelf) return false;
+  if (warmAck && softRefusal) return false;
+
+  return true;
+}
+
+/** Snel live-antwoord afwijzen: te kort, robotzinnen, zwakke identiteitsantwoord. */
+export function replyFailsLiveVoiceQuality(
+  userText: string,
+  reply: string,
+  identityId: VoiceIdentityId,
+): boolean {
+  const r = reply.trim();
+  if (!r) return true;
+  if (replyFailsDependencyBoundary(userText, r, identityId)) return true;
+
+  const userWords = userText.trim().split(/\s+/).filter(Boolean).length;
+  const replyWords = r.split(/\s+/).filter(Boolean).length;
+  const rl = r.toLowerCase();
+
+  if (userWords >= 3 && replyWords <= 2) return true;
+  if (ROBOTIC_SERVICE_PHRASE_RE.test(rl)) return true;
+
+  const identityQuestion =
+    IDENTITY_QUESTION_RE.test(userText) ||
+    /\b(wie ben|wie bent|who are you)\b/i.test(userText.toLowerCase());
+  if (identityQuestion) {
+    const name = getVoiceIdentity(identityId).displayName;
+    const namesSelf =
+      new RegExp(`\\b${name}\\b`, "i").test(r) || /\bmaatje\b/i.test(rl);
+    if (!namesSelf || replyWords < 4) return true;
+  }
+
+  if (replyAssumesMedicalWhenUserDidNot(userText, r)) return true;
+
+  return false;
 }
 
 /** Per beurt: groet, naam, identiteit, geen vraag-op-vraag. */
@@ -261,6 +419,10 @@ export function getTurnContextHints(
     hints.push(getDependencyTurnHint(identityId, lang));
   }
 
+  if (isToneOrRoleComparison(t)) {
+    hints.push(getToneComparisonTurnHint(identityId, lang));
+  }
+
   if (new RegExp(`\\b${name}\\b`, "i").test(t)) {
     hints.push(
       lang === "en"
@@ -272,8 +434,8 @@ export function getTurnContextHints(
   if (IDENTITY_QUESTION_RE.test(t) || /\b(wie|who)\s+(ben|bent|are)\b/i.test(tl)) {
     hints.push(
       lang === "en"
-        ? `They are asking about you. Answer clearly: "I'm ${name}, your HartMaatje companion." No counter-questions.`
-        : `Ze vragen naar u. Antwoord duidelijk: "Ik ben ${name}, uw gespreksmaatje bij HartMaatje." Geen tegen-vragen.`,
+        ? `They are asking about you. Answer clearly: "I'm ${name}, your maatje — someone to talk with." No counter-questions.`
+        : `Ze vragen naar u. Antwoord duidelijk: "Ik ben ${name}, uw maatje — iemand om mee te praten." Geen tegen-vragen.`,
     );
   }
 
@@ -306,13 +468,13 @@ export function getAntiDependencyHint(lang: AppLang): string {
     return (
       "BOUNDARIES: Do not use romantic, possessive, or exclusive language. " +
       "No 'I miss you so much', 'you belong to me', 'I'm the only one for you'. " +
-      "HartMaatje is a conversation companion, not a partner or lover."
+      "HartMaatje is a warm maatje to talk with, not a partner or lover."
     );
   }
   return (
     "GRENZEN: Gebruik geen romantische, bezitterige of exclusieve taal. " +
     "Geen 'ik mis u zo', 'u bent van mij', 'ik ben de enige voor u'. " +
-    "HartMaatje is een gespreksmaatje, geen partner of geliefde."
+    "HartMaatje is een warm maatje om mee te praten, geen partner of geliefde."
   );
 }
 
@@ -322,10 +484,16 @@ export function buildCompanionVoicePrompt(parts: {
   lang: AppLang;
   memoryBlock: string;
   extraHints?: string[];
+  addressForm?: "formeel" | "informeel";
 }): string {
   return [
     ...getProductionPromptBlocks(parts.identityId, parts.lang),
     getCharacterIdentityAnchor(parts.identityId, parts.lang),
+    getNoTechLanguageHint(parts.lang),
+    getAddressFormHint(parts.addressForm ?? "formeel", parts.lang),
+    getNotADoctorHint(parts.lang),
+    getAnswerUserFirstHint(parts.lang),
+    getAntiInterrogationHint(parts.lang),
     getAntiDependencyHint(parts.lang),
     getSessionContinuityHint(parts.lang),
     getForbiddenUnpromptedTopicsHint(parts.lang),
@@ -359,6 +527,9 @@ export function buildCompanionChatPrompt(parts: {
 
   return [
     ...getProductionPromptBlocks(parts.identityId, parts.lang),
+    getCharacterIdentityAnchor(parts.identityId, parts.lang),
+    getNoTechLanguageHint(parts.lang),
+    getAntiDependencyHint(parts.lang),
     getSessionContinuityHint(parts.lang),
     parts.memoryBlock,
     ...(parts.extraHints ?? []),

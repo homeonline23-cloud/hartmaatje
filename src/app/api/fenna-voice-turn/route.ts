@@ -5,6 +5,7 @@ import { jsonApiError } from "@/lib/server/rateLimitResponse";
 import { runCompanionVoiceTurn } from "@/lib/server/fennaVoiceTurn";
 import { getVoiceIdentity } from "@/lib/voice/registry";
 import type { VoiceIdentityId } from "@/lib/voice/types";
+import { isAppLang } from "@/lib/languages";
 
 const VALID_IDS = new Set<VoiceIdentityId>(["maarten", "peter", "fenna", "colette"]);
 
@@ -16,6 +17,7 @@ type Body = {
   resident_id?: string;
   session_id?: string;
   identity_id?: string;
+  address_form?: "formeel" | "informeel";
 };
 
 export const runtime = "nodejs";
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: errors.couldNotReadRecording }, { status: 400 });
   }
 
-  const lang: AppLang = body.lang === "en" ? "en" : "nl";
+  const lang: AppLang = body.lang && isAppLang(body.lang) ? body.lang : "nl";
   const identityId = VALID_IDS.has(body.identity_id as VoiceIdentityId)
     ? (body.identity_id as VoiceIdentityId)
     : "fenna";
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
       identityId,
       residentId: body.resident_id?.trim() || "guest",
       sessionId: body.session_id?.trim(),
+      addressForm: body.address_form === "informeel" ? "informeel" : "formeel",
     });
     return NextResponse.json(result);
   } catch (error) {

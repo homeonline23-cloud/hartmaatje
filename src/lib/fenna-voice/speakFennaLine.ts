@@ -157,8 +157,10 @@ async function playGeminiSpeech(
   }
 }
 
-/** Alleen Gemini TTS — geen browser-fallback (Windows Frank klonk als Colette). */
-const GEMINI_TTS_ONLY = process.env.NEXT_PUBLIC_VOICE_GEMINI_ONLY !== "false";
+/** Alleen Gemini TTS in productie — in development browser-fallback bij quota. */
+const GEMINI_TTS_ONLY =
+  process.env.NODE_ENV === "production" &&
+  process.env.NEXT_PUBLIC_VOICE_GEMINI_ONLY !== "false";
 
 export function isTtsQuotaFailure(err: unknown): boolean {
   if (err instanceof CompanionApiError) return Boolean(err.meta.quotaExceeded);
@@ -168,10 +170,7 @@ export function isTtsQuotaFailure(err: unknown): boolean {
 }
 
 export function getTtsErrorMessage(err: unknown): string {
-  if (err instanceof CompanionApiError) {
-    const hint = err.meta.resetHint;
-    return hint ? `${err.message} ${hint}` : err.message;
-  }
+  if (err instanceof CompanionApiError) return err.message;
   if (err instanceof Error) return err.message;
   return "Spraak mislukt";
 }

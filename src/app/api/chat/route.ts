@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCompanionSystemPrompt, getExtraTurnHints } from "@/lib/chatPrompts";
 import { guestReply } from "@/lib/guestChat";
 import type { AppLang } from "@/lib/languages";
+import { isAppLang } from "@/lib/languages";
 import {
   buildMemoryContextAsync,
   ingestTurnAsync,
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Leeg bericht." }, { status: 400 });
   }
 
-  const lang: AppLang = body.lang === "en" ? "en" : "nl";
+  const lang: AppLang = body.lang && isAppLang(body.lang) ? body.lang : "nl";
   const identityId = VALID_IDS.has(body.identityId as VoiceIdentityId)
     ? (body.identityId as VoiceIdentityId)
     : "fenna";

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AvatarPortrait } from "@/components/AvatarPortrait";
+import { WelcomeVideoFrame } from "@/components/WelcomeVideoFrame";
 import { useLanguage } from "@/context/LanguageContext";
 import { getWelcomeVideoUrl, getWelcomeVideoCrop } from "@/lib/avatars";
 import { getVoiceIdentity } from "@/lib/voice/registry";
@@ -89,16 +90,18 @@ export function CharacterLiveWelcome({
               />
             </div>
           ) : (
-            <video
-              key={`${identityId}-${playNonce}`}
-              src={videoSrc}
-              className={`aspect-video w-full object-cover ${
-                videoCrop ? `${videoCrop.scale} ${videoCrop.position}` : ""
-              }`}
-              playsInline
-              autoPlay
-              onEnded={finishWelcome}
-            />
+            <WelcomeVideoFrame className="aspect-video w-full">
+              <video
+                key={`${identityId}-${playNonce}`}
+                src={videoSrc}
+                className={`aspect-video h-full w-full object-cover ${
+                  videoCrop ? `${videoCrop.scale} ${videoCrop.position}` : ""
+                }`}
+                playsInline
+                autoPlay
+                onEnded={finishWelcome}
+              />
+            </WelcomeVideoFrame>
           )}
         </div>
 

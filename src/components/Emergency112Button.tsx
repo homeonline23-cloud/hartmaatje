@@ -8,18 +8,18 @@ export function Emergency112Button() {
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-50 flex w-[10.5rem] flex-col items-center overflow-visible"
+      className="fixed bottom-4 right-4 z-50 flex w-[9.5rem] flex-col items-center overflow-visible"
       aria-hidden={false}
     >
       <a
         href="tel:112"
         aria-label={copy.ariaLabel}
-        className="relative z-10 flex h-16 w-16 touch-manipulation items-center justify-center rounded-full bg-red-600 text-2xl font-bold text-white shadow-[0_0_0_3px_#fff,0_0_0_5px_#dc2626,0_0_18px_rgba(220,38,38,0.55)] transition active:scale-95"
+        className="relative z-10 flex h-14 w-14 touch-manipulation items-center justify-center rounded-full bg-red-600 text-xl font-bold text-white shadow-[0_0_0_3px_#fff,0_0_0_5px_#dc2626,0_0_16px_rgba(220,38,38,0.55)] transition active:scale-95"
       >
         112
       </a>
       <svg
-        className="pointer-events-none -mt-2 h-[3.25rem] w-full overflow-visible"
+        className="pointer-events-none -mt-2 h-[3rem] w-full overflow-visible"
         viewBox="-6 0 212 62"
         aria-hidden="true"
       >

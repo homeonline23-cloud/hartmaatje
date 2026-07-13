@@ -4,7 +4,7 @@ const API_BASE =
 const REQUEST_TIMEOUT_MS = 30_000;
 const VOICE_TURN_TIMEOUT_MS = 35_000;
 
-export type AppLang = "nl" | "en";
+export type AppLang = "nl" | "en" | "de" | "fr" | "es";
 
 export {
   COMPANION_OPENING,

@@ -85,8 +85,8 @@ export function friendlyGeminiQuotaMessage(
 ): string {
   const base =
     lang === "en"
-      ? `${companionName}'s voice is paused for today — the free daily speech limit is full. You can still read replies on screen.`
-      : `${companionName}'s stem is vandaag even op — het gratis daglimiet voor spraak is vol. U kunt antwoorden nog wel lezen op het scherm.`;
+      ? `${companionName}'s voice is paused for today — the free daily speech limit is full. You can keep chatting; replies appear on screen.`
+      : `${companionName}'s stem is vandaag even op — het gratis daglimiet voor spraak is vol. U kunt gewoon doorpraten; antwoorden verschijnen op het scherm.`;
   return resetHint ? `${base} ${resetHint}` : base;
 }
 

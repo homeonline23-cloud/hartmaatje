@@ -22,9 +22,9 @@ const siteUrl =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "HartMaatje — Uw rustige digitale maatje",
+  title: "HartMaatje — Uw rustige maatje",
   description:
-    "HartMaatje is een warm, liefdevol digitaal maatje voor ouderen. Rustig praten, luisteren, herinneringen delen en dagelijks even contact.",
+    "HartMaatje is een warm maatje voor ouderen — iemand om mee te praten, ook als het eenzaam voelt. Rustig praten, luisteren, herinneringen delen en dagelijks even contact.",
   icons: {
     icon: [{ url: "/logo.png", type: "image/png" }],
     apple: "/logo.png",
@@ -32,9 +32,9 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "HartMaatje — Uw rustige digitale maatje",
+    title: "HartMaatje — Uw rustige maatje",
     description:
-      "HartMaatje is een warm, liefdevol digitaal maatje voor ouderen. Rustig praten, luisteren en dagelijks even contact.",
+      "HartMaatje is een warm maatje voor ouderen. Rustig praten, luisteren en dagelijks even contact.",
     url: siteUrl,
     siteName: "HartMaatje",
     locale: "nl_NL",
@@ -50,9 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "HartMaatje — Uw rustige digitale maatje",
+    title: "HartMaatje — Uw rustige maatje",
     description:
-      "HartMaatje is een warm, liefdevol digitaal maatje voor ouderen.",
+      "HartMaatje is een warm maatje voor ouderen.",
     images: ["/logo.png"],
   },
 };

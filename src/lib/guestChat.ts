@@ -1,13 +1,14 @@
 /** Warme lokale antwoorden — gebaseerd op companion-onderzoek voor ouderen. */
 import { trimCompanionReply } from "@/lib/companionVoice";
 import type { AppLang } from "@/lib/languages";
+import { normalizeCoreLang } from "@/lib/languages";
 
 function reply(text: string): string {
   return trimCompanionReply(text);
 }
 
 const GUEST_REPLIES: Record<
-  AppLang,
+  "nl" | "en",
   {
     greeting: string;
     family: string;
@@ -63,7 +64,7 @@ const GUEST_REPLIES: Record<
 
 export function guestReply(message: string, lang: AppLang = "nl"): string {
   const m = message.toLowerCase().trim();
-  const t = GUEST_REPLIES[lang];
+  const t = GUEST_REPLIES[normalizeCoreLang(lang)];
 
   if (/^(hallo|hoi|hello|goedendag|goedenavond|goedemorgen|good morning|good evening|hi\b)/.test(m)) {
     return reply(t.greeting);

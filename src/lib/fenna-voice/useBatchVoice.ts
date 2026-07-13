@@ -10,6 +10,7 @@ import {
   type AppLang,
   type FennaMessage,
 } from "@/lib/hartmaatje-api/client";
+import { normalizeCoreLang } from "@/lib/languages";
 
 export type BatchVoiceCallbacks = {
   onPhase: (phase: "listening" | "thinking" | "speaking") => void;
@@ -93,16 +94,20 @@ export function useBatchVoice(callbacks: BatchVoiceCallbacks) {
       sessionIdRef.current = res.session_id;
 
       callbacks.onMessages(() => [
-        { id: "opening", role: "assistant", content: FENNA_OPENING[lang] },
+        {
+          id: "opening",
+          role: "assistant",
+          content: FENNA_OPENING[normalizeCoreLang(lang)],
+        },
       ]);
 
       callbacks.onPhase("speaking");
       try {
-        await speakFennaLine(FENNA_OPENING[lang], lang);
+        await speakFennaLine(FENNA_OPENING[normalizeCoreLang(lang)], normalizeCoreLang(lang));
       } catch {
         const openingAudio = await hartmaatjeApi.speak(
           res.session_id,
-          FENNA_OPENING[lang],
+          FENNA_OPENING[normalizeCoreLang(lang)],
           lang,
         );
         await playFennaAudio(openingAudio.audio_base64, openingAudio.mime_type);

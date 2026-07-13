@@ -1,4 +1,7 @@
 import type { AppLang } from "@/lib/languages";
+import { normalizeCoreLang } from "@/lib/languages";
+
+type CoreLang = "nl" | "en";
 
 type HomeCopy = {
   gesprekIntro: string;
@@ -6,6 +9,8 @@ type HomeCopy = {
   greetingDefault: string;
   welcomeLine1: string;
   welcomeLine2: string;
+  /** Tweede regel op de voorpagina-cover. */
+  coverTaglineLine2: string;
   coverStartChat: string;
   voiceInstruction: string;
   chooseVoice: string;
@@ -22,6 +27,7 @@ type HomeCopy = {
   navMemory: string;
   navSettings: string;
   navAbout: string;
+  navPricing: string;
   langPickerButton: string;
   langPickerTitle: string;
   langPickerClose: string;
@@ -42,12 +48,13 @@ type HomeCopy = {
   differentiatorBody: string;
 };
 
-const COPY: Record<AppLang, HomeCopy> = {
+const COPY: Record<CoreLang, HomeCopy> = {
   nl: {
     gesprekIntro: "HartMaatje is er om rustig naar u te luisteren.",
     greetingNamed: (name) => `Fijn dat U er bent, ${name}. Neem gerust Uw tijd.`,
     greetingDefault: "Fijn dat U er bent. Neem gerust Uw tijd.",
-    welcomeLine1: "U bent niet alleen.",
+    welcomeLine1: "Een warm maatje voor rust,",
+    coverTaglineLine2: "gezelschap en oprechte aandacht.",
     welcomeLine2: "Wij zijn hier om rustig en met aandacht te luisteren.",
     coverStartChat: "Start gesprek.",
     voiceInstruction: "Druk op de microfoon.",
@@ -65,6 +72,7 @@ const COPY: Record<AppLang, HomeCopy> = {
     navMemory: "Geheugen",
     navSettings: "Instellingen",
     navAbout: "Over",
+    navPricing: "Prijs",
     langPickerButton: "Taal",
     langPickerTitle: "Kies uw taal",
     langPickerClose: "Sluiten",
@@ -86,13 +94,14 @@ const COPY: Record<AppLang, HomeCopy> = {
     liveWelcomeHint: "Praat gerust wanneer u wilt.",
     differentiatorHeading: "Wat HartMaatje anders maakt",
     differentiatorBody:
-      "HartMaatje is geen contact-app, geen spelletje en geen algemene spraakassistent. Het is een vaste, warme gesprekspartner met een herkenbaar gezicht en stem — Maarten, Peter, Fenna of Colette — die rustig luistert wanneer u dat wilt. Gesprekken mogen zolang doorgaan als u zelf wilt; er is geen haast en geen druk. HartMaatje is gemaakt voor ouderen die zich alleen voelen — thuis, in dagopvang of in een verpleeghuis — met grote letters, eenvoud en respect, zodat praten weer vertrouwd voelt, niet technisch.",
+      "HartMaatje is geen contact-app, geen spelletje en geen algemene spraakassistent. Het is een vaste, warme gesprekspartner met een herkenbaar gezicht en stem — Maarten, Peter, Fenna of Colette — die rustig luistert wanneer u dat wilt. Gesprekken mogen zolang doorgaan als u zelf wilt; er is geen haast en geen druk. HartMaatje is met liefde, warmte en respect ontworpen voor eenzame ouderen.",
   },
   en: {
     gesprekIntro: "HartMaatje is here to listen to you calmly.",
     greetingNamed: (name) => `We're glad you're here, ${name}. Please take your time.`,
     greetingDefault: "We're glad you're here. Please take your time.",
-    welcomeLine1: "You are not alone.",
+    welcomeLine1: "A warm companion for calm,",
+    coverTaglineLine2: "company, and genuine attention.",
     welcomeLine2: "We are here to listen calmly and with care.",
     coverStartChat: "Start conversation",
     voiceInstruction: "Press the microphone.",
@@ -110,6 +119,7 @@ const COPY: Record<AppLang, HomeCopy> = {
     navMemory: "Memory",
     navSettings: "Settings",
     navAbout: "About",
+    navPricing: "Pricing",
     langPickerButton: "Language",
     langPickerTitle: "Choose your language",
     langPickerClose: "Close",
@@ -131,12 +141,12 @@ const COPY: Record<AppLang, HomeCopy> = {
     liveWelcomeHint: "Speak whenever you like.",
     differentiatorHeading: "What makes HartMaatje different",
     differentiatorBody:
-      "HartMaatje is not a contact app, not a game, and not a generic voice assistant. It is a steady, warm conversation partner with a familiar face and voice — Maarten, Peter, Fenna, or Colette — who listens calmly whenever you like. Conversations can go on as long as you want; there is no rush and no pressure. HartMaatje is built for older adults who feel alone — at home, in day care, or in a nursing home — with large text, simplicity, and respect, so talking feels human again, not technical.",
+      "HartMaatje is not a contact app, not a game, and not a generic voice assistant. It is a steady, warm conversation partner with a familiar face and voice — Maarten, Peter, Fenna, or Colette — who listens calmly whenever you like. Conversations can go on as long as you want; there is no rush and no pressure. HartMaatje is designed with love, warmth, and respect for lonely older adults.",
   },
 };
 
 export function getHomeCopy(lang: AppLang): HomeCopy {
-  return COPY[lang];
+  return COPY[normalizeCoreLang(lang)];
 }
 
 /** Volledige welkomstzin voor gesproken preview — zelfde tekst als op het scherm. */
@@ -147,7 +157,7 @@ export function getWelcomeSpeechText(
   const copy = getHomeCopy(lang);
   const name = displayName?.trim();
   return [
-    copy.welcomeLine1,
+    `${copy.welcomeLine1} ${copy.coverTaglineLine2}`,
     name ? copy.greetingNamed(name) : copy.greetingDefault,
     copy.welcomeLine2,
   ].join(" ");
@@ -241,7 +251,7 @@ export type MemoryCopy = {
   deleteConfirm: (preview: string) => string;
 };
 
-const SAFETY_TEST_COPY: Record<AppLang, SafetyTestCopy> = {
+const SAFETY_TEST_COPY: Record<CoreLang, SafetyTestCopy> = {
   nl: {
     cardHeading: "Veiligheidstest (Fenna · Colette · Peter · Maarten)",
     cardIntro:
@@ -366,7 +376,7 @@ const SAFETY_TEST_COPY: Record<AppLang, SafetyTestCopy> = {
   },
 };
 
-const SETTINGS_COPY: Record<AppLang, SettingsCopy> = {
+const SETTINGS_COPY: Record<CoreLang, SettingsCopy> = {
   nl: {
     title: "Instellingen",
     intro:
@@ -425,7 +435,7 @@ const SETTINGS_COPY: Record<AppLang, SettingsCopy> = {
   },
 };
 
-const MEMORY_COPY: Record<AppLang, MemoryCopy> = {
+const MEMORY_COPY: Record<CoreLang, MemoryCopy> = {
   nl: {
     title: "Geheugen",
     intro:
@@ -474,11 +484,11 @@ const MEMORY_COPY: Record<AppLang, MemoryCopy> = {
 };
 
 export function getSettingsCopy(lang: AppLang): SettingsCopy {
-  return SETTINGS_COPY[lang];
+  return SETTINGS_COPY[normalizeCoreLang(lang)];
 }
 
 export function getMemoryCopy(lang: AppLang): MemoryCopy {
-  return MEMORY_COPY[lang];
+  return MEMORY_COPY[normalizeCoreLang(lang)];
 }
 
 export function getVoiceSpeedLabel(lang: AppLang, rate: number): string {
@@ -590,6 +600,23 @@ export type RetentionOption = {
   days: number | null;
 };
 
+export type PricingCopy = {
+  pageTitle: string;
+  headline: string;
+  subline: string;
+  cardTitle: string;
+  perMonth: string;
+  pricePending: string;
+  noHiddenCosts: string;
+  includesHeading: string;
+  includes: readonly string[];
+  forWhoHeading: string;
+  forWho: readonly string[];
+  ctaStart: string;
+  ctaRegister: string;
+  footnote: string;
+};
+
 export type AppCopy = {
   home: HomeCopy;
   settings: SettingsCopy;
@@ -597,6 +624,7 @@ export type AppCopy = {
   chat: ChatCopy;
   errors: ErrorsCopy;
   privacy: PrivacyCopy;
+  pricing: PricingCopy;
   emergency: EmergencyCopy;
   header: HeaderCopy;
   meta: MetaCopy;
@@ -605,7 +633,68 @@ export type AppCopy = {
   retentionOptions: readonly RetentionOption[];
 };
 
-const CHAT_COPY: Record<AppLang, ChatCopy> = {
+const PRICING_COPY: Record<CoreLang, PricingCopy> = {
+  nl: {
+    pageTitle: "Prijs",
+    headline:
+      "Eén vaste prijs voor rust, gezelschap en oprechte aandacht.",
+    subline:
+      "Geen ingewikkelde pakketten, maar één helder bedrag per maand. Zo weet u precies waar u aan toe bent.",
+    cardTitle: "HartMaatje",
+    perMonth: "per maand",
+    pricePending: "Het maandbedrag maken we binnenkort bekend.",
+    noHiddenCosts: "Geen verborgen kosten. Geen verrassingen achteraf.",
+    includesHeading: "Wat is inbegrepen",
+    includes: [
+      "Fenna, Maarten, Peter of Colette — kies het maatje dat bij u past",
+      "Rustig praten, wanneer u wilt en zo lang als u wilt.",
+      "Persoonlijk geheugen voor wat belangrijk is (met uw toestemming)",
+      "Ontworpen voor eenzame ouderen — met liefde, warmte en respect.",
+      "Veilige grenzen: geen medisch advies, maar wel warm gezelschap en oprechte aandacht.",
+    ],
+    forWhoHeading: "Voor wie",
+    forWho: [
+      "Ouderen die thuis zich soms alleen voelen",
+      "Familie die een betrouwbaar, warm contactpunt zoekt voor een dierbare",
+      "Mensen die rustig willen praten — zonder haast of druk",
+    ],
+    ctaStart: "Start gesprek",
+    ctaRegister: "Account aanmaken",
+    footnote:
+      "De prijs geldt voor één gebruiker. Facturatie en betaling volgen zodra HartMaatje live gaat.",
+  },
+  en: {
+    pageTitle: "Pricing",
+    headline:
+      "HartMaatje: One fixed price for calm, companionship, and care for your loved one.",
+    subline:
+      "No complicated packages — one clear monthly amount so you always know what to expect.",
+    cardTitle: "HartMaatje",
+    perMonth: "per month",
+    pricePending: "The monthly amount will be announced soon.",
+    noHiddenCosts: "No hidden fees. No surprises later.",
+    includesHeading: "What's included",
+    includes: [
+      "Fenna, Maarten, Peter, or Colette — choose the companion that fits",
+      "Calm conversation whenever you like, for as long as you like",
+      "Personal memory for what matters (with your consent)",
+      "Large text, simplicity, and respect — made for older adults",
+      "Safe boundaries: no medical advice, but warm company",
+    ],
+    forWhoHeading: "Who it's for",
+    forWho: [
+      "Older adults at home who sometimes feel alone",
+      "Family looking for a reliable, warm point of contact for a loved one",
+      "Anyone who wants to talk calmly — without rush or pressure",
+    ],
+    ctaStart: "Start conversation",
+    ctaRegister: "Create account",
+    footnote:
+      "Price applies to one user. Billing and payment will follow when HartMaatje goes live.",
+  },
+};
+
+const CHAT_COPY: Record<CoreLang, ChatCopy> = {
   nl: {
     userSaidLabel: "U zei",
     heardYouSay: "Ik hoorde u zeggen:",
@@ -654,7 +743,7 @@ const CHAT_COPY: Record<AppLang, ChatCopy> = {
   },
 };
 
-const ERRORS_COPY: Record<AppLang, ErrorsCopy> = {
+const ERRORS_COPY: Record<CoreLang, ErrorsCopy> = {
   nl: {
     micNotSupported:
       "Praten lukt nu even niet in uw browser. Probeer het later opnieuw.",
@@ -687,7 +776,7 @@ const ERRORS_COPY: Record<AppLang, ErrorsCopy> = {
   },
 };
 
-const PRIVACY_COPY: Record<AppLang, PrivacyCopy> = {
+const PRIVACY_COPY: Record<CoreLang, PrivacyCopy> = {
   nl: {
     title: "Privacy-dashboard",
     intro:
@@ -764,7 +853,7 @@ const PRIVACY_COPY: Record<AppLang, PrivacyCopy> = {
   },
 };
 
-const EMERGENCY_COPY: Record<AppLang, EmergencyCopy> = {
+const EMERGENCY_COPY: Record<CoreLang, EmergencyCopy> = {
   nl: {
     ariaLabel: "Druk voor nood — bel 112",
     arcText: "Druk voor nood",
@@ -775,7 +864,7 @@ const EMERGENCY_COPY: Record<AppLang, EmergencyCopy> = {
   },
 };
 
-const HEADER_COPY: Record<AppLang, HeaderCopy> = {
+const HEADER_COPY: Record<CoreLang, HeaderCopy> = {
   nl: {
     homeAria: "HartMaatje — startpagina",
     mainNavAria: "Hoofdmenu",
@@ -786,25 +875,25 @@ const HEADER_COPY: Record<AppLang, HeaderCopy> = {
   },
 };
 
-const META_COPY: Record<AppLang, MetaCopy> = {
+const META_COPY: Record<CoreLang, MetaCopy> = {
   nl: {
-    title: "HartMaatje — Uw rustige digitale maatje",
+    title: "HartMaatje — Uw rustige maatje",
     description:
-      "HartMaatje is een warm, liefdevol digitaal maatje voor ouderen. Rustig praten, luisteren, herinneringen delen en dagelijks even contact.",
+      "HartMaatje is een warm maatje voor ouderen — iemand om mee te praten, ook als het eenzaam voelt. Rustig praten, luisteren, herinneringen delen en dagelijks even contact.",
   },
   en: {
-    title: "HartMaatje — Your calm digital companion",
+    title: "HartMaatje — Your calm maatje",
     description:
-      "HartMaatje is a warm, caring digital companion for older adults. Talk calmly, be heard, share memories, and stay in touch each day.",
+      "HartMaatje is a warm maatje for older adults — someone to talk with, especially when days feel lonely. Talk calmly, be heard, share memories, and stay in touch each day.",
   },
 };
 
-const COMMON_COPY: Record<AppLang, CommonCopy> = {
+const COMMON_COPY: Record<CoreLang, CommonCopy> = {
   nl: { loading: "Even geduld…", busy: "Bezig…" },
   en: { loading: "One moment…", busy: "Working…" },
 };
 
-const PROFILE_RECOVERY_COPY: Record<AppLang, ProfileRecoveryCopy> = {
+const PROFILE_RECOVERY_COPY: Record<CoreLang, ProfileRecoveryCopy> = {
   nl: {
     title: "Profiel laden",
     intro:
@@ -833,7 +922,7 @@ const PROFILE_RECOVERY_COPY: Record<AppLang, ProfileRecoveryCopy> = {
   },
 };
 
-const RETENTION_OPTIONS: Record<AppLang, readonly RetentionOption[]> = {
+const RETENTION_OPTIONS: Record<CoreLang, readonly RetentionOption[]> = {
   nl: [
     { label: "Niet automatisch verwijderen", days: null },
     { label: "6 maanden (180 dagen)", days: 180 },
@@ -849,24 +938,26 @@ const RETENTION_OPTIONS: Record<AppLang, readonly RetentionOption[]> = {
 };
 
 export function getAppCopy(lang: AppLang): AppCopy {
+  const core = normalizeCoreLang(lang);
   return {
-    home: COPY[lang],
-    settings: SETTINGS_COPY[lang],
-    memory: MEMORY_COPY[lang],
-    chat: CHAT_COPY[lang],
-    errors: ERRORS_COPY[lang],
-    privacy: PRIVACY_COPY[lang],
-    emergency: EMERGENCY_COPY[lang],
-    header: HEADER_COPY[lang],
-    meta: META_COPY[lang],
-    common: COMMON_COPY[lang],
-    profileRecovery: PROFILE_RECOVERY_COPY[lang],
-    retentionOptions: RETENTION_OPTIONS[lang],
+    home: COPY[core],
+    settings: SETTINGS_COPY[core],
+    memory: MEMORY_COPY[core],
+    chat: CHAT_COPY[core],
+    errors: ERRORS_COPY[core],
+    privacy: PRIVACY_COPY[core],
+    pricing: PRICING_COPY[core],
+    emergency: EMERGENCY_COPY[core],
+    header: HEADER_COPY[core],
+    meta: META_COPY[core],
+    common: COMMON_COPY[core],
+    profileRecovery: PROFILE_RECOVERY_COPY[core],
+    retentionOptions: RETENTION_OPTIONS[core],
   };
 }
 
 export function getVoiceTypingFallback(lang: AppLang): string {
-  return ERRORS_COPY[lang].voiceTypingFallback;
+  return ERRORS_COPY[normalizeCoreLang(lang)].voiceTypingFallback;
 }
 
 export function isVoiceTypingFallback(error: string): boolean {
@@ -880,7 +971,7 @@ export function isVoiceTypingFallback(error: string): boolean {
 /** Vertaal bekende API-fouten (NL) naar de gekozen taal. */
 export function translateApiError(message: string, lang: AppLang): string {
   const nl = ERRORS_COPY.nl;
-  const target = ERRORS_COPY[lang];
+  const target = ERRORS_COPY[normalizeCoreLang(lang)];
   const pairs: (keyof ErrorsCopy)[] = [
     "noConnection",
     "notLoggedIn",
@@ -898,5 +989,5 @@ export function translateApiError(message: string, lang: AppLang): string {
 }
 
 export function getRetentionOptions(lang: AppLang): readonly RetentionOption[] {
-  return RETENTION_OPTIONS[lang];
+  return RETENTION_OPTIONS[normalizeCoreLang(lang)];
 }

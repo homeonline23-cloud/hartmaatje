@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { AvatarPortrait } from "@/components/AvatarPortrait";
 import { companionMediaBackdropClass, companionShellClass } from "@/components/ui";
+import { WelcomeVideoFrame } from "@/components/WelcomeVideoFrame";
 import { useLanguage } from "@/context/LanguageContext";
 import { getWelcomeVideoCrop, getWelcomeVideoUrl } from "@/lib/avatars";
 import type { NatureScene } from "@/lib/natureShowcase";
@@ -116,17 +117,19 @@ export function CompanionPanel({
             ) : null}
           </div>
         ) : showVideo ? (
-          <video
-            ref={videoRef}
-            key={`${identityId}-${playNonce}`}
-            src={videoSrc!}
-            className={`aspect-video w-full object-cover ${
-              videoCrop ? `${videoCrop.scale} ${videoCrop.position}` : ""
-            }`}
-            playsInline
-            autoPlay
-            onEnded={onWelcomeComplete}
-          />
+          <WelcomeVideoFrame className="aspect-video w-full">
+            <video
+              ref={videoRef}
+              key={`${identityId}-${playNonce}`}
+              src={videoSrc!}
+              className={`aspect-video h-full w-full object-cover ${
+                videoCrop ? `${videoCrop.scale} ${videoCrop.position}` : ""
+              }`}
+              playsInline
+              autoPlay
+              onEnded={onWelcomeComplete}
+            />
+          </WelcomeVideoFrame>
         ) : (
           <div className={`flex aspect-video w-full items-center justify-center ${companionMediaBackdropClass}`}>
             <AvatarPortrait
