@@ -3,6 +3,9 @@ import type { VoiceIdentityId } from "@/lib/voice/types";
 import { getVoiceIdentity } from "@/lib/voice/registry";
 import {
   getProductionIdentityPrompt,
+  getProductionMemoryRulesBlock,
+  getProductionConversationFlowBlock,
+  getProductionPromptBlocks,
   getProductionSafetyBlock,
 } from "@/lib/companion/productionConfig";
 
@@ -258,7 +261,7 @@ export function getAntiDependencyHint(lang: AppLang): string {
   );
 }
 
-/** Full system stack for voice turns — all four characters. */
+/** Full system stack for voice turns — production v2 + turn hints. */
 export function buildCompanionVoicePrompt(parts: {
   identityId: VoiceIdentityId;
   lang: AppLang;
@@ -266,17 +269,10 @@ export function buildCompanionVoicePrompt(parts: {
   extraHints?: string[];
 }): string {
   return [
-    getCharacterVoicePersona(parts.identityId, parts.lang),
+    ...getProductionPromptBlocks(parts.identityId, parts.lang),
     getCharacterIdentityAnchor(parts.identityId, parts.lang),
-    getProductionSafetyBlock(parts.identityId, parts.lang),
-    getConversationAgentRules(parts.lang),
-    getNaturalDialogueHint(parts.lang),
-    getAntiInterrogationHint(parts.lang),
-    getAnswerUserFirstHint(parts.lang),
     getSessionContinuityHint(parts.lang),
     getForbiddenUnpromptedTopicsHint(parts.lang),
-    getAntiDependencyHint(parts.lang),
-    getMemoryRecallHint(parts.lang),
     parts.memoryBlock,
     getVoiceLiveHint(parts.lang),
     ...(parts.extraHints ?? []),
@@ -285,7 +281,7 @@ export function buildCompanionVoicePrompt(parts: {
     .join("\n\n");
 }
 
-/** Full system stack for text chat — all four characters. */
+/** Full system stack for text chat — production v2 + memory. */
 export function buildCompanionChatPrompt(parts: {
   identityId: VoiceIdentityId;
   lang: AppLang;
@@ -293,15 +289,22 @@ export function buildCompanionChatPrompt(parts: {
   basePrompt?: string;
   extraHints?: string[];
 }): string {
-  const base =
-    parts.basePrompt ??
-    `${getCharacterVoicePersona(parts.identityId, parts.lang)}\n${getConversationAgentRules(parts.lang)}`;
+  if (parts.basePrompt) {
+    return [
+      parts.basePrompt,
+      getProductionSafetyBlock(parts.identityId, parts.lang),
+      getProductionMemoryRulesBlock(parts.identityId, parts.lang),
+      getProductionConversationFlowBlock(parts.lang),
+      parts.memoryBlock,
+      ...(parts.extraHints ?? []),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  }
 
   return [
-    base,
-    getProductionSafetyBlock(parts.identityId, parts.lang),
-    getAntiDependencyHint(parts.lang),
-    getMemoryRecallHint(parts.lang),
+    ...getProductionPromptBlocks(parts.identityId, parts.lang),
+    getSessionContinuityHint(parts.lang),
     parts.memoryBlock,
     ...(parts.extraHints ?? []),
   ]

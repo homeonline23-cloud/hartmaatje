@@ -4,36 +4,57 @@ import assert from "node:assert/strict";
 import {
   getProductionCharacter,
   getProductionConfig,
+  getProductionConversationFlowBlock,
   getProductionIntroLine,
+  getProductionMemoryRulesBlock,
+  getProductionPromptBlocks,
+  getProductionResponseStyleBlock,
   getProductionSafetyBlock,
 } from "./productionConfig";
 
-describe("productionConfig", () => {
-  it("loads all four production characters", () => {
-    const { characters, version } = getProductionConfig();
-    assert.equal(version, "1.0");
+describe("productionConfig v2", () => {
+  it("loads version 2.0 with conversation flow rules", () => {
+    const { version, conversation_flow_rules, characters } = getProductionConfig();
+    assert.equal(version, "2.0");
+    assert.equal(conversation_flow_rules.length, 8);
     assert.equal(characters.length, 4);
-    assert.deepEqual(
-      characters.map((c) => c.id),
-      ["fenna", "maarten", "peter", "colette"],
-    );
   });
 
   it("uses fixed Dutch intro lines", () => {
     assert.equal(getProductionIntroLine("fenna", "nl"), "Hallo, ik ben Fenna.");
-    assert.equal(getProductionIntroLine("colette", "nl"), "Hallo, ik ben Colette.");
+    assert.equal(getProductionIntroLine("peter", "nl"), "Hallo, ik ben Peter.");
   });
 
-  it("includes identity and safety in prompts", () => {
+  it("includes v2 style, memory, flow and safety blocks", () => {
     const fenna = getProductionCharacter("fenna");
-    assert.match(fenna.identity_prompt, /Je bent Fenna/);
-    assert.match(fenna.identity_prompt, /grabbelton/);
-    assert.equal(fenna.safety_rules.length, 8);
-    assert.equal(fenna.forbidden_behaviors.length, 7);
+    assert.equal(fenna.response_style_rules.length, 8);
+    assert.equal(fenna.memory_rules.length, 8);
+    assert.match(fenna.memory_rules[2], /Wie bent u/);
 
-    const block = getProductionSafetyBlock("peter", "nl");
-    assert.match(block, /VEILIGHEIDSREGELS/);
-    assert.match(block, /VERBODEN GEDRAG/);
-    assert.match(block, /Peter/);
+    const style = getProductionResponseStyleBlock("colette", "nl");
+    assert.match(style, /ANTWOORDSTIJL/);
+    assert.match(style, /zachte zinnen/);
+
+    const memory = getProductionMemoryRulesBlock("maarten", "nl");
+    assert.match(memory, /GEHEUGENREGELS/);
+    assert.match(memory, /Identity memory/);
+
+    const flow = getProductionConversationFlowBlock("nl");
+    assert.match(flow, /GESPREKSVERLOOP/);
+    assert.match(flow, /direct de vraag/);
+
+    const safety = getProductionSafetyBlock("peter", "nl");
+    assert.match(safety, /VEILIGHEIDSREGELS/);
+    assert.match(safety, /Peter/);
+  });
+
+  it("builds full production prompt stack", () => {
+    const blocks = getProductionPromptBlocks("fenna", "nl");
+    assert.equal(blocks.length, 5);
+    assert.match(blocks.join("\n"), /Je bent Fenna/);
+    assert.match(blocks.join("\n"), /ANTWOORDSTIJL/);
+    assert.match(blocks.join("\n"), /GEHEUGENREGELS/);
+    assert.match(blocks.join("\n"), /GESPREKSVERLOOP/);
+    assert.match(blocks.join("\n"), /VEILIGHEIDSREGELS/);
   });
 });
