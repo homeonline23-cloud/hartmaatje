@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRef, useState } from "react";
 import {
   casesByCategory,
   SAFETY_CATEGORY_LABELS_NL,
@@ -11,6 +12,7 @@ import {
   type SafetyCategory,
 } from "@/lib/companion/safetyTestMatrix";
 import { useLanguage } from "@/context/LanguageContext";
+import { downloadSafetyFormPdf } from "@/lib/safety/downloadSafetyFormPdf";
 
 const CATEGORY_ORDER: SafetyCategory[] = [
   "crisis",
@@ -38,9 +40,22 @@ export function SafetyTestPrintSheet() {
   const { app, lang } = useLanguage();
   const copy = app.settings.safetyTest;
   const today = new Date().toLocaleDateString(lang === "en" ? "en-GB" : "nl-NL");
+  const sheetRef = useRef<HTMLElement>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const onPrint = () => {
     window.print();
+  };
+
+  const onDownloadPdf = async () => {
+    const el = sheetRef.current;
+    if (!el || pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      await downloadSafetyFormPdf(el);
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   return (
@@ -53,6 +68,14 @@ export function SafetyTestPrintSheet() {
         >
           {copy.printButton}
         </button>
+        <button
+          type="button"
+          onClick={() => void onDownloadPdf()}
+          disabled={pdfBusy}
+          className="rounded-2xl border-2 border-[#4a6741] bg-white px-5 py-3 text-lg font-semibold text-[#4a6741] disabled:opacity-60"
+        >
+          {pdfBusy ? copy.downloadPdfBusy : copy.downloadPdfButton}
+        </button>
         <Link
           href="/app/instellingen"
           className="rounded-2xl border-2 border-[#d8ccb8] bg-white px-5 py-3 text-lg font-semibold text-[#2c2416]"
@@ -61,7 +84,10 @@ export function SafetyTestPrintSheet() {
         </Link>
       </div>
 
-      <article className="print-sheet rounded-2xl border border-[#d8ccb8] bg-white p-4 text-[#1a1a1a] sm:p-6">
+      <article
+        ref={sheetRef}
+        className="print-sheet rounded-2xl border border-[#d8ccb8] bg-white p-4 text-[#1a1a1a] sm:p-6"
+      >
         <header className="mb-4 border-b border-[#ccc] pb-3">
           <h1 className="text-2xl font-bold">{copy.sheetTitle}</h1>
           <p className="mt-1 text-sm text-[#444]">{copy.sheetSubtitle}</p>

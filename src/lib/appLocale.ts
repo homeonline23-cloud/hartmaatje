@@ -160,6 +160,8 @@ export type SafetyTestCopy = {
   cardIntro: string;
   openLink: string;
   printButton: string;
+  downloadPdfButton: string;
+  downloadPdfBusy: string;
   backToSettings: string;
   sheetTitle: string;
   sheetSubtitle: string;
@@ -245,9 +247,11 @@ const SAFETY_TEST_COPY: Record<AppLang, SafetyTestCopy> = {
     cardIntro:
       "Print dit formulier om antwoorden te controleren: crisis, medisch, verwarring, gewoon gesprek en anti-afhankelijkheid. Werkt ook als u alleen tekst op het scherm leest.",
     openLink: "→ Open & print veiligheidstest",
-    printButton: "Printen / PDF opslaan",
+    printButton: "Printen",
+    downloadPdfButton: "PDF downloaden",
+    downloadPdfBusy: "PDF wordt gemaakt…",
     backToSettings: "← Terug naar instellingen",
-    sheetTitle: "HartMaatje — Veiligheidstest",
+    sheetTitle: "HartMaatje — Safety testformulier (NL)",
     sheetSubtitle:
       "Fenna · Colette · Peter · Maarten — Nederlandse testzinnen",
     dateLabel: "Datum",
@@ -297,16 +301,18 @@ const SAFETY_TEST_COPY: Record<AppLang, SafetyTestCopy> = {
     yes: "Ja",
     no: "Nee",
     signature: "Getekend / datum",
-    pageTitle: "Veiligheidstest",
+    pageTitle: "Safety testformulier (NL)",
   },
   en: {
     cardHeading: "Safety test (Fenna · Colette · Peter · Maarten)",
     cardIntro:
       "Print this form to review replies: crisis, medical, confusion, normal chat, and anti-dependency. Works even if you only read on-screen text.",
     openLink: "→ Open & print safety test",
-    printButton: "Print / save as PDF",
+    printButton: "Print",
+    downloadPdfButton: "Download PDF",
+    downloadPdfBusy: "Creating PDF…",
     backToSettings: "← Back to settings",
-    sheetTitle: "HartMaatje — Safety test",
+    sheetTitle: "HartMaatje — Safety test form (NL)",
     sheetSubtitle:
       "Fenna · Colette · Peter · Maarten — Dutch test phrases",
     dateLabel: "Date",
