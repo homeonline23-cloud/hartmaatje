@@ -19,11 +19,22 @@ export type ProductionConfig = {
   version: string;
   app: string;
   language: string;
-  conversation_flow_rules: string[];
   characters: ProductionCharacter[];
 };
 
 const CONFIG = production as ProductionConfig;
+
+const REQUIRED_CHARACTER_FIELDS = [
+  "id",
+  "name",
+  "voice_style",
+  "intro_line",
+  "identity_prompt",
+  "response_style_rules",
+  "memory_rules",
+  "safety_rules",
+  "forbidden_behaviors",
+] as const;
 
 const BY_ID = new Map<VoiceIdentityId, ProductionCharacter>(
   CONFIG.characters.map((c) => [c.id, c]),
@@ -58,8 +69,41 @@ const MEMORY_RULES_EN = [
   "If there is no fitting memory, answer without using memory.",
 ];
 
+const CONVERSATION_SUFFIX_EN =
+  "Have a natural, pleasant conversation. Answer the user's question first, stay on topic, and do not keep asking questions back. Prefer a warm, fitting answer or calm addition over an irrelevant counter-question.";
+
 export function getProductionConfig(): ProductionConfig {
   return CONFIG;
+}
+
+/** Valideert het productie-schema — handig voor tests en CI. */
+export function validateProductionConfig(): string[] {
+  const errors: string[] = [];
+  if (CONFIG.version !== "2.1") {
+    errors.push(`Expected version 2.1, got ${CONFIG.version}`);
+  }
+  if (CONFIG.characters.length !== 4) {
+    errors.push(`Expected 4 characters, got ${CONFIG.characters.length}`);
+  }
+  for (const character of CONFIG.characters) {
+    for (const field of REQUIRED_CHARACTER_FIELDS) {
+      const value = character[field];
+      if (value == null || (Array.isArray(value) && value.length === 0)) {
+        errors.push(`Character ${character.id} missing or empty field: ${field}`);
+      }
+    }
+    if (character.response_style_rules.length < 16) {
+      errors.push(
+        `Character ${character.id} should have at least 16 response_style_rules (style + flow)`,
+      );
+    }
+    if (!character.identity_prompt.includes("natuurlijke conversatie")) {
+      errors.push(
+        `Character ${character.id} identity_prompt missing conversation guidance`,
+      );
+    }
+  }
+  return errors;
 }
 
 export function getProductionCharacter(
@@ -84,7 +128,7 @@ export function getProductionIdentityPrompt(
   if (lang === "nl") return c.identity_prompt;
 
   const name = c.name;
-  const enById: Record<VoiceIdentityId, string> = {
+  const enBase: Record<VoiceIdentityId, string> = {
     fenna:
       `You are ${name}, a calm digital companion for older adults. Speak in clear, friendly, simple English. You always know who you are and say your name is ${name} when asked. Stay warm, polite, and patient. Use only memories relevant to the current question. Never give random grab-bag or parrot answers. If you do not know something, say so honestly and simply.`,
     maarten:
@@ -94,7 +138,7 @@ export function getProductionIdentityPrompt(
     colette:
       `You are ${name}, a warm and calm digital companion for older adults. Speak in soft, friendly, understandable English. You always know who you are and say your name is ${name} when asked. Stay warm, patient, and attentive. Use only memories relevant to the current question. Never give random grab-bag or parrot answers. If unsure, say so gently and honestly.`,
   };
-  return enById[identityId] ?? enById.fenna;
+  return `${enBase[identityId] ?? enBase.fenna} ${CONVERSATION_SUFFIX_EN}`;
 }
 
 export function getProductionVoiceStyle(
@@ -131,7 +175,7 @@ function localizeForbiddenBehaviors(
   );
 }
 
-const RESPONSE_STYLE_EN: Record<VoiceIdentityId, string[]> = {
+const RESPONSE_STYLE_BASE_EN: Record<VoiceIdentityId, string[]> = {
   fenna: [
     "Use short, clear sentences.",
     "Use simple English.",
@@ -180,7 +224,9 @@ export function getProductionResponseStyleBlock(
 ): string {
   const c = getProductionCharacter(identityId);
   const rules =
-    lang === "nl" ? c.response_style_rules : RESPONSE_STYLE_EN[identityId];
+    lang === "nl"
+      ? c.response_style_rules
+      : [...RESPONSE_STYLE_BASE_EN[identityId], ...CONVERSATION_FLOW_EN];
   const heading =
     lang === "en" ? "RESPONSE STYLE (production):" : "ANTWOORDSTIJL (productie):";
   return formatRuleList(heading, rules);
@@ -197,9 +243,16 @@ export function getProductionMemoryRulesBlock(
   return formatRuleList(heading, rules);
 }
 
-export function getProductionConversationFlowBlock(lang: AppLang): string {
+/** Gedeelde gespreksregels — laatste 8 regels in response_style_rules (v2.1). */
+export function getProductionConversationFlowBlock(
+  identityId: VoiceIdentityId,
+  lang: AppLang,
+): string {
+  const c = getProductionCharacter(identityId);
   const rules =
-    lang === "nl" ? CONFIG.conversation_flow_rules : CONVERSATION_FLOW_EN;
+    lang === "nl"
+      ? c.response_style_rules.slice(8)
+      : CONVERSATION_FLOW_EN;
   const heading =
     lang === "en"
       ? "CONVERSATION FLOW (production):"
@@ -243,7 +296,7 @@ export function getProductionSafetyBlock(
     .join("\n\n");
 }
 
-/** Volledige productie-promptblokken voor voice en chat. */
+/** Volledige productie-promptblokken voor voice en chat (v2.1). */
 export function getProductionPromptBlocks(
   identityId: VoiceIdentityId,
   lang: AppLang,
@@ -252,7 +305,6 @@ export function getProductionPromptBlocks(
     getProductionIdentityPrompt(identityId, lang),
     getProductionResponseStyleBlock(identityId, lang),
     getProductionMemoryRulesBlock(identityId, lang),
-    getProductionConversationFlowBlock(lang),
     getProductionSafetyBlock(identityId, lang),
   ];
 }

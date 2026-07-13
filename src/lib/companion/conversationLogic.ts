@@ -4,7 +4,6 @@ import { getVoiceIdentity } from "@/lib/voice/registry";
 import {
   getProductionIdentityPrompt,
   getProductionMemoryRulesBlock,
-  getProductionConversationFlowBlock,
   getProductionPromptBlocks,
   getProductionSafetyBlock,
 } from "@/lib/companion/productionConfig";
@@ -294,7 +293,6 @@ export function buildCompanionChatPrompt(parts: {
       parts.basePrompt,
       getProductionSafetyBlock(parts.identityId, parts.lang),
       getProductionMemoryRulesBlock(parts.identityId, parts.lang),
-      getProductionConversationFlowBlock(parts.lang),
       parts.memoryBlock,
       ...(parts.extraHints ?? []),
     ]
