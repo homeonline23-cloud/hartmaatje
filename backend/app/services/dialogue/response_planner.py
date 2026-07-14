@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from app.core.constants import MAX_MEMORY_INJECT_LINES
 from app.domain.models.dialogue import ClassifiedIntent, DialogueDecision, ResponsePlan, ToneMode
 from app.services.memory.memory_service import MemoryContext
 
@@ -23,7 +24,7 @@ def build_response_plan(
 
     if decision.use_memory and memory_ctx.prompt_block.strip():
         lines = [ln.strip() for ln in memory_ctx.prompt_block.splitlines() if ln.strip()]
-        selected = lines[: decision.memory_line_limit]
+        selected = lines[: min(decision.memory_line_limit, MAX_MEMORY_INJECT_LINES)]
         selected_count = len(selected)
         memory_block = "\n".join(selected)
 

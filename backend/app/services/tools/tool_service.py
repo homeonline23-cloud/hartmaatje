@@ -6,6 +6,7 @@ from typing import Literal
 
 from app.domain.models.dialogue import ResponsePlan
 from app.services.tools.tool_router import route_tool
+from app.schemas import ResidentMemory
 
 AppLang = Literal["nl", "en"]
 
@@ -16,6 +17,7 @@ async def apply_tools(
     lang: AppLang = "nl",
     *,
     resident_id: str = "guest",
+    memory: ResidentMemory | None = None,
 ) -> ResponsePlan:
     """
     Run tools requested by the response plan and attach context.
@@ -30,6 +32,7 @@ async def apply_tools(
         query,
         lang,
         resident_id=resident_id,
+        memory=memory,
     )
     return plan.model_copy(
         update={

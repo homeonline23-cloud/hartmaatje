@@ -19,7 +19,7 @@ app/
     chat/                   # turn orchestration, voice, session, speech, TTS
     personas/               # persona_loader (data/personas/)
     nlu/
-    memory/                 # memory_service, ranker, filters
+    memory/                 # memory_service, pipeline, ranker, filters, enrichment
     dialogue/               # intent, dialogue_manager, response_planner
     safety/
     prompts/                # prompt_builder + legacy YAML reference

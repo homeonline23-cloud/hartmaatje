@@ -16,6 +16,7 @@ import { processCompanionVoiceTurn } from "@/lib/fenna-voice/fennaVoicePipeline"
 import {
   interruptFennaAudio,
   isFennaAudioPlaying,
+  playFennaAudio,
   unlockAudioPlayback,
 } from "@/lib/fenna-voice/playback";
 import { playCompanionReply, speakCompanionLine } from "@/lib/fenna-voice/speakFennaLine";
@@ -41,7 +42,8 @@ import {
 import { friendlyGeminiErrorMessage, isApiErrorPayload } from "@/lib/geminiErrors";
 import { isTtsQuotaFailure, getTtsErrorMessage } from "@/lib/fenna-voice/speakFennaLine";
 import { CompanionApiError } from "@/lib/fenna-voice/fennaVoicePipeline";
-import { hartmaatjeApi, type FennaMessage } from "@/lib/hartmaatje-api/client";
+import { hartmaatjeApi, storeBackendSessionId, type FennaMessage } from "@/lib/hartmaatje-api/client";
+import { getGeminiPlaybackRate } from "@/lib/voice/geminiVoiceConfig";
 import { getVoiceIdentity } from "@/lib/voice/registry";
 import type { VoiceIdentityId } from "@/lib/voice/types";
 
@@ -240,12 +242,22 @@ export function CompanionVoiceSession({
       }
 
       try {
-        await playCompanionReply(
-          turn.reply,
-          langRef.current,
-          identityRef.current,
-          gen,
-        );
+        if (turn.replyAudioBase64) {
+          await playFennaAudio(
+            turn.replyAudioBase64,
+            turn.replyMimeType ?? "audio/mp3",
+            getGeminiPlaybackRate(identityRef.current),
+            () => isCompanionVoiceSessionActive(gen),
+          );
+        } else {
+          await playCompanionReply(
+            turn.reply,
+            langRef.current,
+            identityRef.current,
+            gen,
+            sid,
+          );
+        }
       } catch (ttsErr) {
         if (isTtsQuotaFailure(ttsErr) && !ttsWarnedRef.current) {
           ttsWarnedRef.current = true;
@@ -311,8 +323,13 @@ export function CompanionVoiceSession({
             typeof window !== "undefined"
               ? localStorage.getItem(RESIDENT_KEY) ?? "guest"
               : "guest";
-          const res = await hartmaatjeApi.startSession(residentId, lang);
+          const res = await hartmaatjeApi.startSession(
+            residentId,
+            lang,
+            identityRef.current,
+          );
           sessionId = res.session_id;
+          storeBackendSessionId(sessionId);
           voiceLog("backend session", { sessionId });
         }
       } catch {
@@ -367,7 +384,7 @@ export function CompanionVoiceSession({
       listener.pause();
       speakingRef.current = true;
       try {
-        await speakCompanionLine(opening, lang, identityRef.current, gen);
+        await speakCompanionLine(opening, lang, identityRef.current, gen, sessionIdRef.current);
       } catch (ttsErr) {
         if (isTtsQuotaFailure(ttsErr) && !ttsWarnedRef.current) {
           ttsWarnedRef.current = true;

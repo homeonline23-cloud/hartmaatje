@@ -6,6 +6,7 @@ import logging
 from typing import Literal, Optional
 
 from app.domain.models.dialogue import ResponsePlan
+from app.domain.models.memory import MemoryTurnMetrics
 from app.services.observability.metrics import record_turn
 
 logger = logging.getLogger("hartmaatje.turn")
@@ -27,6 +28,7 @@ def log_turn(
     response_length: int,
     reply_retried: bool = False,
     quality_violations: Optional[list[str]] = None,
+    memory_metrics: Optional[MemoryTurnMetrics] = None,
 ) -> dict:
     """Emit structured log for one completed turn."""
     payload = {
@@ -52,6 +54,21 @@ def log_turn(
         "reply_retried": reply_retried,
         "quality_violations": quality_violations or [],
     }
+    if memory_metrics:
+        payload.update(
+            {
+                "memory_candidates_in": memory_metrics.candidates_in,
+                "memory_saved_count": memory_metrics.saved_count,
+                "memory_retrieved_count": memory_metrics.retrieved_count,
+                "memory_identity_blocked": memory_metrics.identity_blocked,
+                "calendar_used": memory_metrics.calendar_used,
+                "care_notes_used": memory_metrics.care_notes_used,
+                "memory_ranked_lines": [
+                    {"text": line.text, "score": line.score, "reasons": line.reasons}
+                    for line in memory_metrics.ranked_lines
+                ],
+            }
+        )
     logger.info("HARTMAATJE_TURN %s", payload)
     record_turn(payload)
     return payload

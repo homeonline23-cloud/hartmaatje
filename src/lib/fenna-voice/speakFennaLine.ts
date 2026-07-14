@@ -1,5 +1,10 @@
 import type { AppLang } from "@/lib/hartmaatje-api/client";
 import {
+  hartmaatjeApi,
+  isBackendSessionId,
+  toBackendLang,
+} from "@/lib/hartmaatje-api/client";
+import {
   CompanionApiError,
   parseApiErrorResponse,
 } from "@/lib/http/companionApiError";
@@ -45,10 +50,32 @@ export async function fetchCompanionSpeech(
   lang: AppLang,
   identityId: VoiceIdentityId = "fenna",
   sessionGeneration?: number,
+  sessionId?: string | null,
 ): Promise<CompanionSpeechClip> {
   const cleaned = text.trim();
   if (!cleaned) {
     throw new Error("Geen tekst om voor te lezen.");
+  }
+
+  if (isBackendSessionId(sessionId)) {
+    voiceLog("TTS prefetch (backend /speech/speak)", {
+      sessionId,
+      chars: cleaned.length,
+      preview: cleaned.slice(0, 80),
+    });
+    try {
+      const data = await hartmaatjeApi.speak(sessionId, cleaned, lang);
+      if (data.audio_base64) {
+        return {
+          audioBase64: data.audio_base64,
+          mimeType: data.mime_type ?? "audio/mp3",
+        };
+      }
+    } catch (err) {
+      voiceLog("backend TTS failed — fallback to Next.js", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   voiceLog("TTS prefetch (/api/companion-speak)", {
@@ -62,7 +89,7 @@ export async function fetchCompanionSpeech(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: cleaned, identityId, lang }),
+      body: JSON.stringify({ text: cleaned, identityId, lang: toBackendLang(lang) }),
       signal: getCompanionVoiceAbortSignal(),
     },
     { maxAttempts: 3, signal: getCompanionVoiceAbortSignal() ?? undefined },
@@ -106,6 +133,7 @@ async function playGeminiSpeech(
   lang: AppLang,
   identityId: VoiceIdentityId,
   sessionGeneration?: number,
+  sessionId?: string | null,
 ): Promise<void> {
   if (
     sessionGeneration !== undefined &&
@@ -116,9 +144,17 @@ async function playGeminiSpeech(
 
   const playbackRate = getGeminiPlaybackRate(identityId);
   const { first, rest } = splitForFastSpeech(text);
-  const firstPromise = fetchCompanionSpeech(first, lang, identityId, sessionGeneration);
+  const firstPromise = fetchCompanionSpeech(
+    first,
+    lang,
+    identityId,
+    sessionGeneration,
+    sessionId,
+  );
   const restPromise = rest
-    ? fetchCompanionSpeech(rest, lang, identityId, sessionGeneration).catch(() => null)
+    ? fetchCompanionSpeech(rest, lang, identityId, sessionGeneration, sessionId).catch(
+        () => null,
+      )
     : null;
 
   const firstClip = await firstPromise;
@@ -185,6 +221,7 @@ export async function playCompanionReply(
   lang: AppLang,
   identityId: VoiceIdentityId = "fenna",
   sessionGeneration?: number,
+  sessionId?: string | null,
 ): Promise<void> {
   const cleaned = text.trim();
   if (!cleaned) return;
@@ -197,7 +234,7 @@ export async function playCompanionReply(
   }
 
   try {
-    await playGeminiSpeech(cleaned, lang, identityId, sessionGeneration);
+    await playGeminiSpeech(cleaned, lang, identityId, sessionGeneration, sessionId);
   } catch (err) {
     if (
       sessionGeneration !== undefined &&
@@ -238,8 +275,9 @@ export async function speakCompanionLine(
   lang: AppLang,
   identityId: VoiceIdentityId = "fenna",
   sessionGeneration?: number,
+  sessionId?: string | null,
 ): Promise<void> {
-  await playCompanionReply(text, lang, identityId, sessionGeneration);
+  await playCompanionReply(text, lang, identityId, sessionGeneration, sessionId);
 }
 
 /** @deprecated use speakCompanionLine */

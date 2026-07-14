@@ -6,6 +6,7 @@ import re
 from typing import Literal
 
 from app.domain.models.nlu import MemoryCandidate, NluResult, TopicId
+from app.domain.models.memory import RankedMemoryLine
 
 AppLang = Literal["nl", "en"]
 
@@ -57,18 +58,30 @@ def rank_memory_lines(
     limit: int = 6,
 ) -> list[str]:
     """Score and return the most relevant memory lines for this turn."""
+    detailed = rank_memory_lines_detailed(lines, user_message, nlu, limit=limit)
+    return [line.text for line in detailed]
+
+
+def rank_memory_lines_detailed(
+    lines: list[str],
+    user_message: str,
+    nlu: NluResult | None = None,
+    *,
+    limit: int = 6,
+) -> list[RankedMemoryLine]:
+    """Score and return ranked memory lines with explicit reasons."""
     if not lines:
         return []
 
     tokens = _relevance_tokens(user_message, nlu)
-    scored: list[tuple[float, str]] = []
+    scored: list[RankedMemoryLine] = []
     for line in lines:
-        score = _line_score(line, tokens, nlu)
+        score, reasons = _line_score_detailed(line, tokens, nlu)
         if score > 0:
-            scored.append((score, line))
+            scored.append(RankedMemoryLine(text=line, score=score, reasons=reasons))
 
-    scored.sort(key=lambda item: item[0], reverse=True)
-    return [line for _, line in scored[:limit]]
+    scored.sort(key=lambda item: item.score, reverse=True)
+    return scored[:limit]
 
 
 def _relevance_tokens(user_message: str, nlu: NluResult | None) -> set[str]:
@@ -84,19 +97,21 @@ def _relevance_tokens(user_message: str, nlu: NluResult | None) -> set[str]:
     return tokens
 
 
-def _line_score(
+def _line_score_detailed(
     line: str,
     tokens: set[str],
     nlu: NluResult | None,
-) -> float:
+) -> tuple[float, list[str]]:
     line_tokens = _tokens(line)
     if not line_tokens:
-        return 0.0
+        return 0.0, []
 
     score = 0.0
+    reasons: list[str] = []
     overlap = tokens & line_tokens
     if overlap:
         score += len(overlap) * 1.0
+        reasons.append(f"token_overlap:{','.join(sorted(overlap))}")
 
     if nlu:
         line_lower = line.lower()
@@ -104,12 +119,24 @@ def _line_score(
             keywords = _TOPIC_KEYWORDS.get(topic.id, ())
             if any(kw in line_lower for kw in keywords):
                 score += topic.confidence * 1.5
+                reasons.append(f"topic:{topic.id}")
         if nlu.detected_tone.primary in ("sadness", "stress"):
             if any(m in line_lower for m in ("miss", "vermis", "emot", "worried", "bang")):
                 score += 0.8
+                reasons.append("tone:emotional")
         for entity in nlu.entities:
             if entity.text.lower() in line_lower:
                 score += entity.confidence
+                reasons.append(f"entity:{entity.text}")
+    return score, reasons
+
+
+def _line_score(
+    line: str,
+    tokens: set[str],
+    nlu: NluResult | None,
+) -> float:
+    score, _ = _line_score_detailed(line, tokens, nlu)
     return score
 
 

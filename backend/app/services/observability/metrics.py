@@ -18,6 +18,11 @@ _METRIC_HELP = {
     "voice_turn_failed_total": "Voice turns that failed without recovery",
     "voice_turn_recovered_total": "Voice turns that failed but returned to listening",
     "voice_interrupt_total": "User interruptions during TTS playback",
+    "memory_saved_total": "Memory candidates saved to resident profile",
+    "memory_candidates_total": "NLU memory candidates per turn",
+    "calendar_enrichment_total": "Turns where calendar enrichment was used",
+    "care_notes_enrichment_total": "Turns where care notes enrichment was used",
+    "memory_identity_blocked_total": "Turns where identity question blocked memory injection",
 }
 
 
@@ -38,6 +43,16 @@ def record_turn(payload: dict) -> None:
     if payload.get("reply_retried"):
         record_turn_metric("reply_retried_total")
     record_turn_metric("response_length_sum", float(payload.get("response_length", 0)))
+    if payload.get("memory_saved_count"):
+        record_turn_metric("memory_saved_total", float(payload["memory_saved_count"]))
+    if payload.get("memory_candidates_in"):
+        record_turn_metric("memory_candidates_total", float(payload["memory_candidates_in"]))
+    if payload.get("calendar_used"):
+        record_turn_metric("calendar_enrichment_total")
+    if payload.get("care_notes_used"):
+        record_turn_metric("care_notes_enrichment_total")
+    if payload.get("memory_identity_blocked"):
+        record_turn_metric("memory_identity_blocked_total")
 
 
 def record_voice_client_metrics(payload: dict) -> None:

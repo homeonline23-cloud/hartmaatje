@@ -50,19 +50,18 @@ Scenarios:
 
 | Risk | Status |
 |------|--------|
-| Voice turn still via Next.js `/api/fenna-voice-turn` | Prompt 1 — route to Python backend |
-| Duplicate memory (frontend + backend) | Prompt 2 — unified pipeline |
+| Voice turn via Python `/chat/voice-turn` when backend session active | Done — fallback to Next.js if backend down |
+| Duplicate memory (frontend + backend) | Done — canonical `MemoryPipeline` in Python |
 | Logged-in Supabase chat separate memory | Out of pilot scope |
 | No automated browser E2E (Playwright) | Manual + `pilot_voice_scenarios.py` |
 | Quick-ack / dead-air filler | Not implemented — thinking phase is silent |
 
 ## Blockers for live care pilot
 
-1. **Voice routing to backend orchestrator** (Prompt 1) — safety/memory must be single path
-2. **Failed turn rate < 5%** over 20+ test turns
-3. **Zero double responses** in interrupt scenario
-4. **Staff alert webhook** configured for safety tests
-5. **Privacy / consent** flow for residents (product, not backend)
+1. **Failed turn rate < 5%** over 20+ test turns (with backend on :8000)
+2. **Zero double responses** in interrupt scenario
+3. **Staff alert webhook** configured for safety tests
+4. **Privacy / consent** flow for residents (product, not backend)
 
 ## Not blockers for technical pilot
 

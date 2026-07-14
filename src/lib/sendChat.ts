@@ -3,6 +3,12 @@ import { getAppCopy } from "@/lib/appLocale";
 import { guestReply } from "@/lib/guestChat";
 import { DEFAULT_APP_LANG, type AppLang } from "@/lib/languages";
 import type { VoiceIdentityId } from "@/lib/voice/types";
+import {
+  getStoredBackendSessionId,
+  hartmaatjeApi,
+  storeBackendSessionId,
+  toBackendLang,
+} from "@/lib/hartmaatje-api/client";
 
 export type ChatCompletionResult = {
   thread_id: string;
@@ -25,12 +31,47 @@ async function isLoggedIn(): Promise<boolean> {
   return Boolean(session?.access_token);
 }
 
+async function guestChatViaBackend(
+  message: string,
+  lang: AppLang,
+  identityId: VoiceIdentityId,
+): Promise<ChatCompletionResult | null> {
+  try {
+    const health = await hartmaatjeApi.health();
+    if (!health.fenna_ready) return null;
+
+    let sessionId = getStoredBackendSessionId();
+    if (!sessionId) {
+      const residentId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("hartmaatje_resident") ?? "guest"
+          : "guest";
+      const started = await hartmaatjeApi.startSession(residentId, lang, identityId);
+      sessionId = started.session_id;
+      storeBackendSessionId(sessionId);
+    }
+
+    const data = await hartmaatjeApi.sendMessage(sessionId, message, lang);
+    return {
+      thread_id: sessionId,
+      reply: data.reply,
+      assistant_message_id: null,
+      prompt_version: data.prompt_version ?? "persona-v2.1",
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function guestChatViaApi(
   message: string,
   lang: AppLang,
   identityId: VoiceIdentityId,
   history: GuestHistoryItem[],
 ): Promise<ChatCompletionResult> {
+  const backend = await guestChatViaBackend(message, lang, identityId);
+  if (backend) return backend;
+
   try {
     const residentId =
       typeof window !== "undefined"
@@ -41,7 +82,7 @@ async function guestChatViaApi(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message,
-        lang,
+        lang: toBackendLang(lang),
         identityId,
         history,
         resident_id: residentId,

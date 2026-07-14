@@ -13,7 +13,8 @@ from app.services.dialogue.dialogue_manager import decide_dialogue
 from app.services.dialogue.intent_service import classify_intent
 from app.services.chat.lang import resolve_session_lang
 from app.services.llm.llm_service import generate_companion_reply
-from app.services.memory.memory_service import JsonMemoryService, get_memory_service
+from app.services.memory.memory_service import JsonMemoryService, MemoryContext, get_memory_service
+from app.services.memory.pipeline import get_memory_pipeline
 from app.services.personas.persona_loader import get_persona, normalize_persona_id
 from app.services.prompts.prompt_builder import build_system_prompt
 from app.services.quality.quality_enforcer import build_quality_retry_hint, validate_reply
@@ -85,20 +86,26 @@ class ChatOrchestrator:
         intent = classify_intent(user_text, nlu, guard, lang)
         nlu.intent = intent.id
 
-        # Memory save + context build
-        memory_updated = self._memory.save_candidates(
-            session.resident_id, nlu.candidate_memories
-        )
-        memory_ctx = self._memory.build_context(
-            session.resident_id,
-            user_text,
-            persona,
-            lang,
+        # Memory — canonical pipeline (save + retrieve)
+        pipeline = get_memory_pipeline()
+        memory_result = pipeline.process_turn(
+            resident_id=session.resident_id,
+            user_message=user_text,
+            persona=persona,
+            lang=lang,
+            nlu=nlu,
             session_summary=_session_summary(session, lang),
             fallback_name=session.display_name,
-            nlu=nlu,
+            candidates=nlu.candidate_memories,
         )
-        known_name = memory_ctx.known_name
+        memory_updated = memory_result.memory_updated
+        memory_ctx = MemoryContext(
+            prompt_block=memory_result.prompt_block,
+            updated=memory_updated,
+            known_name=memory_result.known_name,
+            metrics=memory_result.metrics,
+        )
+        known_name = memory_result.known_name
 
         # Hard safety stops (before dialogue planning)
         if guard.emergency_reply:
@@ -143,7 +150,13 @@ class ChatOrchestrator:
         )
 
         # 6. Memory / tool selection
-        plan = await apply_tools(plan, user_text, lang, resident_id=session.resident_id)
+        plan = await apply_tools(
+            plan,
+            user_text,
+            lang,
+            resident_id=session.resident_id,
+            memory=memory_result.resident_memory,
+        )
 
         # 7. Prompt builder
         system_prompt = build_system_prompt(
@@ -227,6 +240,7 @@ class ChatOrchestrator:
             response_length=len(reply),
             reply_retried=retried,
             quality_violations=quality_violations,
+            memory_metrics=memory_ctx.metrics,
         )
 
         return TurnResult(

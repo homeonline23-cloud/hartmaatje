@@ -6,7 +6,13 @@ import {
   parseApiErrorResponse,
 } from "@/lib/http/companionApiError";
 import { retryFetch } from "@/lib/http/retryFetch";
-import type { AppLang, FennaMessage } from "@/lib/hartmaatje-api/client";
+import {
+  hartmaatjeApi,
+  isBackendSessionId,
+  toBackendLang,
+  type AppLang,
+  type FennaMessage,
+} from "@/lib/hartmaatje-api/client";
 import type { VoiceIdentityId } from "@/lib/voice/types";
 
 export type VoiceTurnResult = {
@@ -18,6 +24,43 @@ export type VoiceTurnResult = {
   source: "backend" | "next";
   timings_ms?: Record<string, number>;
 };
+
+async function backendTurn(
+  blob: Blob,
+  lang: AppLang,
+  sessionId: string,
+): Promise<VoiceTurnResult> {
+  voiceLog("one-shot voice turn → backend /chat/voice-turn", {
+    sessionId,
+    bytes: blob.size,
+    mime: blob.type || "audio/webm",
+  });
+
+  const base64 = await blobToBase64(blob);
+  const data = await hartmaatjeApi.voiceTurn(
+    sessionId,
+    base64,
+    blob.type || "audio/webm",
+    lang,
+    "complete",
+  );
+
+  const userText = (data.user_text ?? "").trim();
+  const reply = (data.reply ?? "").trim();
+
+  voiceLog("STT result", { text: userText, source: "backend" });
+  voiceLog("LLM reply", { text: reply, chars: reply.length, source: "backend" });
+  voiceLog("text ready", { timings_ms: data.timings_ms, source: "backend" });
+
+  return {
+    userText,
+    reply,
+    replyAudioBase64: data.audio_base64 || undefined,
+    replyMimeType: data.mime_type || undefined,
+    source: "backend",
+    timings_ms: data.timings_ms,
+  };
+}
 
 async function nextJsTurn(
   blob: Blob,
@@ -54,7 +97,7 @@ async function nextJsTurn(
         body: JSON.stringify({
           audio_base64: base64,
           mime_type: blob.type || "audio/webm",
-          lang,
+          lang: toBackendLang(lang),
           history: history.slice(-12).map((m) => ({ role: m.role, content: m.content })),
           resident_id: residentId,
           session_id: sessionId ?? undefined,
@@ -129,6 +172,15 @@ export async function processCompanionVoiceTurn(
   identityId: VoiceIdentityId = "fenna",
   addressForm: "formeel" | "informeel" = "formeel",
 ): Promise<VoiceTurnResult> {
+  if (isBackendSessionId(sessionId)) {
+    try {
+      return await backendTurn(blob, lang, sessionId);
+    } catch (err) {
+      voiceLog("backend voice turn failed — fallback to Next.js", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
   return nextJsTurn(blob, lang, history, residentId, sessionId, identityId, addressForm);
 }
 
@@ -136,4 +188,3 @@ export async function processCompanionVoiceTurn(
 export const processFennaVoiceTurn = processCompanionVoiceTurn;
 
 export { CompanionApiError };
-

@@ -4,13 +4,11 @@ Optimized voice-turn orchestration with parallel stages and timing logs.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import uuid
 from dataclasses import dataclass
 from typing import Literal, Optional
 
-from app.repositories.memory_repository import get_memory_store
 from app.schemas import SafetyFlag
 from app.services.chat.chat_service import get_chat_orchestrator
 from app.services.chat.lang import resolve_session_lang
@@ -59,11 +57,6 @@ async def process_voice_turn(
 ) -> VoiceTurnResult:
     timer = TurnTimer(turn_id=str(uuid.uuid4())[:8])
     lang = resolve_session_lang(session, lang_override)
-    memory_store = get_memory_store()
-
-    memory_task = asyncio.create_task(
-        asyncio.to_thread(memory_store.load, session.resident_id)
-    )
 
     has_audio = bool(audio_base64 and audio_base64.strip())
     user_text = ""
@@ -89,10 +82,7 @@ async def process_voice_turn(
     else:
         timer.mark("stt")
 
-    memory = await memory_task
-    timer.mark("memory_load")
-
-    known_name = memory.display_name or session.display_name
+    known_name = session.display_name
     if user_text:
         user_text = sanitize_user_transcript(user_text, known_name)
 
