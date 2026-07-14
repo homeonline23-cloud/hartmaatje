@@ -1,0 +1,116 @@
+"""Intent keyword lexicons (NL + EN) — 6 intent labels."""
+
+from __future__ import annotations
+
+from app.domain.models.dialogue import IntentId
+
+INTENT_LEXICON: dict[IntentId, dict[str, list[str]]] = {
+    "normal_conversation": {
+        "nl": ["hallo", "hoi", "goedemorgen", "goedenavond", "dag ", "hey", "fijn"],
+        "en": ["hello", "hi ", "good morning", "good afternoon", "hey"],
+    },
+    "memory_related": {
+        "nl": [
+            "herinner je",
+            "weet je nog",
+            "mijn naam is",
+            "ik heet",
+            "kleinzoon",
+            "kleindochter",
+            "mijn zoon",
+            "mijn dochter",
+            "mijn hond",
+            "mijn kat",
+            "kom uit",
+            "woon in",
+            "hobby",
+        ],
+        "en": [
+            "remember",
+            "do you recall",
+            "my name is",
+            "call me",
+            "grandson",
+            "granddaughter",
+            "my son",
+            "my daughter",
+            "my dog",
+            "my cat",
+            "from ",
+            "live in",
+            "hobby",
+        ],
+    },
+    "practical_question": {
+        "nl": [
+            "hoe laat",
+            "welke dag",
+            "wanneer is",
+            "waar is",
+            "hoeveel",
+            "kun je me vertellen",
+            "wat moet ik",
+        ],
+        "en": [
+            "what time",
+            "which day",
+            "when is",
+            "where is",
+            "how much",
+            "how many",
+            "can you tell me",
+            "what should i",
+        ],
+    },
+    "emotional_support": {
+        "nl": [
+            "eenzaam",
+            "verdrietig",
+            "somber",
+            "bang",
+            "zorgen",
+            "mis ik",
+            "vermis",
+            "niet lekker in mijn vel",
+            "huil",
+        ],
+        "en": [
+            "lonely",
+            "sad",
+            "down",
+            "scared",
+            "worried",
+            "miss ",
+            "not feeling well",
+            "crying",
+        ],
+    },
+    "research_candidate": {
+        "nl": [
+            "zoek op",
+            "opzoeken",
+            "op het internet",
+            "nieuws",
+            "weer",
+            "voorspelling",
+            "wat is de",
+            "wie is",
+            "kun je opzoeken",
+        ],
+        "en": [
+            "look up",
+            "search for",
+            "on the internet",
+            "news",
+            "weather",
+            "forecast",
+            "what is the",
+            "who is",
+            "can you find",
+        ],
+    },
+    "safety_sensitive": {
+        "nl": [],
+        "en": [],
+    },
+}

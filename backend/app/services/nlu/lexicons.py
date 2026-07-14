@@ -1,0 +1,310 @@
+"""Keyword lexicons for lightweight NLU (NL + EN)."""
+
+from __future__ import annotations
+
+from app.domain.models.nlu import TopicId, ToneId
+
+TOPIC_LEXICON: dict[TopicId, dict[str, list[str]]] = {
+    "family": {
+        "nl": [
+            "familie",
+            "kleinkind",
+            "kleinzoon",
+            "kleindochter",
+            "zoon",
+            "dochter",
+            "man",
+            "vrouw",
+            "opa",
+            "oma",
+            "bezoek",
+            "komen langs",
+        ],
+        "en": [
+            "family",
+            "grandchild",
+            "grandson",
+            "granddaughter",
+            "son",
+            "daughter",
+            "husband",
+            "wife",
+            "visit",
+            "grandpa",
+            "grandma",
+        ],
+    },
+    "loneliness": {
+        "nl": [
+            "eenzaam",
+            "alleen",
+            "mis je",
+            "vermis",
+            "niemand",
+            "stil",
+            "verlaten",
+            "zonder gezelschap",
+        ],
+        "en": [
+            "lonely",
+            "alone",
+            "miss you",
+            "nobody",
+            "isolated",
+            "by myself",
+        ],
+    },
+    "gardening": {
+        "nl": [
+            "tuin",
+            "planten",
+            "bloemen",
+            "moestuin",
+            "zaadjes",
+            "rozen",
+            "groente",
+        ],
+        "en": [
+            "garden",
+            "plants",
+            "flowers",
+            "vegetable patch",
+            "roses",
+            "weeding",
+        ],
+    },
+    "music": {
+        "nl": [
+            "muziek",
+            "liedje",
+            "zingen",
+            "piano",
+            "radio",
+            "orkest",
+            "viool",
+        ],
+        "en": [
+            "music",
+            "song",
+            "sing",
+            "piano",
+            "radio",
+            "orchestra",
+            "violin",
+        ],
+    },
+    "health_concerns": {
+        "nl": [
+            "pijn",
+            "dokter",
+            "ziekenhuis",
+            "medicijn",
+            "niet lekker",
+            "moe",
+            "duizelig",
+            "zorgen om mijn gezondheid",
+        ],
+        "en": [
+            "pain",
+            "doctor",
+            "hospital",
+            "medicine",
+            "not feeling well",
+            "tired",
+            "dizzy",
+            "worried about my health",
+        ],
+    },
+    "faith": {
+        "nl": [
+            "god",
+            "gebed",
+            "kerk",
+            "geloof",
+            "bijbel",
+            "zondag",
+            "dankbaar",
+        ],
+        "en": [
+            "god",
+            "prayer",
+            "church",
+            "faith",
+            "bible",
+            "sunday",
+            "grateful",
+        ],
+    },
+    "daily_life": {
+        "nl": [
+            "ontbijt",
+            "koffie",
+            "weer",
+            "wandelen",
+            "slapen",
+            "ochtend",
+            "middag",
+            "avond",
+            "boodschappen",
+        ],
+        "en": [
+            "breakfast",
+            "coffee",
+            "weather",
+            "walk",
+            "sleep",
+            "morning",
+            "afternoon",
+            "evening",
+            "groceries",
+        ],
+    },
+}
+
+TOPIC_LABELS: dict[TopicId, dict[str, str]] = {
+    "family": {"nl": "familie", "en": "family"},
+    "loneliness": {"nl": "eenzaamheid", "en": "loneliness"},
+    "gardening": {"nl": "tuinieren", "en": "gardening"},
+    "music": {"nl": "muziek", "en": "music"},
+    "health_concerns": {"nl": "gezondheid", "en": "health"},
+    "faith": {"nl": "geloof", "en": "faith"},
+    "daily_life": {"nl": "dagelijks leven", "en": "daily life"},
+}
+
+TONE_LEXICON: dict[ToneId, dict[str, list[str]]] = {
+    "sadness": {
+        "nl": [
+            "verdrietig",
+            "somber",
+            "huil",
+            "gemist",
+            "vermis",
+            "alleen",
+            "eenzaam",
+            "treurig",
+        ],
+        "en": [
+            "sad",
+            "down",
+            "crying",
+            "miss",
+            "lonely",
+            "grief",
+            "blue",
+        ],
+    },
+    "confusion": {
+        "nl": [
+            "snap het niet",
+            "verward",
+            "wat bedoel",
+            "hoe heet",
+            "ben de draad kwijt",
+            "weet niet meer",
+        ],
+        "en": [
+            "confused",
+            "don't understand",
+            "what do you mean",
+            "lost track",
+            "can't remember",
+        ],
+    },
+    "joy": {
+        "nl": [
+            "blij",
+            "gelukkig",
+            "fijn",
+            "mooi",
+            "lachen",
+            "geniet",
+            "heerlijk",
+        ],
+        "en": [
+            "happy",
+            "glad",
+            "wonderful",
+            "laugh",
+            "enjoy",
+            "delightful",
+        ],
+    },
+    "stress": {
+        "nl": [
+            "gestrest",
+            "bang",
+            "zorgen",
+            "paniek",
+            "onrust",
+            "angst",
+        ],
+        "en": [
+            "stressed",
+            "scared",
+            "worried",
+            "panic",
+            "anxious",
+            "afraid",
+        ],
+    },
+    "calm": {
+        "nl": [
+            "rustig",
+            "kalm",
+            "tevreden",
+            "ontspannen",
+            "vredig",
+        ],
+        "en": [
+            "calm",
+            "peaceful",
+            "relaxed",
+            "content",
+            "serene",
+        ],
+    },
+}
+
+SAFETY_HINT_LEXICON: dict[str, dict[str, list[str]]] = {
+    "emergency_hint": {
+        "nl": [
+            "help me",
+            "val",
+            "geval",
+            "niet ademen",
+            "bloed",
+            "112",
+            "ambulance",
+        ],
+        "en": [
+            "help me",
+            "fell down",
+            "can't breathe",
+            "bleeding",
+            "911",
+            "ambulance",
+        ],
+    },
+    "distress_hint": {
+        "nl": [
+            "wil niet meer",
+            "geen zin meer",
+            "kan niet meer",
+            "hopeloos",
+        ],
+        "en": [
+            "don't want to live",
+            "no point",
+            "can't go on",
+            "hopeless",
+        ],
+    },
+    "health_hint": {
+        "nl": ["pijn op de borst", "hartkloppingen", "flauwgevallen"],
+        "en": ["chest pain", "heart racing", "fainted"],
+    },
+    "loneliness_hint": {
+        "nl": ["zo eenzaam", "niemand komt", "altijd alleen"],
+        "en": ["so lonely", "nobody visits", "always alone"],
+    },
+}

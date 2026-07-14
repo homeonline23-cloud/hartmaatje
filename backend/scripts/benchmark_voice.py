@@ -11,10 +11,10 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND))
 
-from app.services.fenna_chat import generate_fenna_reply
-from app.services.quick_ack import select_quick_ack
-from app.services.session_manager import session_manager
-from app.services.tts import synthesize_fenna_speech
+from app.services.chat.fenna_chat import generate_fenna_reply
+from app.services.chat.quick_ack import select_quick_ack
+from app.services.chat.session_manager import session_manager
+from app.services.chat.tts import synthesize_fenna_speech
 
 
 async def bench_text_turn(lang: str = "en") -> dict[str, float]:
