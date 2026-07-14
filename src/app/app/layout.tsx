@@ -14,7 +14,7 @@ export default function AppLayout({
     <div className="relative flex min-h-screen flex-col overflow-x-hidden">
       <InnerPageBackground />
       <HartMaatjeHeader />
-      <main className="relative z-10 mx-auto w-full max-w-3xl flex-1 px-4 py-4">
+      <main className="relative z-10 mx-auto w-full max-w-3xl flex-1 px-4 py-4 pb-28">
         <ProfileRecoveryGate>{children}</ProfileRecoveryGate>
       </main>
       <Emergency112Button />

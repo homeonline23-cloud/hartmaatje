@@ -4,7 +4,6 @@ import Image from "next/image";
 import { Cormorant_Garamond } from "next/font/google";
 import { HartmaatjeBrandTitle } from "@/components/HartmaatjeBrandTitle";
 import { LogoRainbowHalo } from "@/components/LogoRainbowHalo";
-import { HartmaatjeDigitalClock } from "@/components/HartmaatjeDigitalClock";
 import { companionStartButtonClass } from "@/components/ui";
 import { hartmaatjeGreenOverlayClass } from "@/lib/hartmaatjeTheme";
 import { useLanguage } from "@/context/LanguageContext";
@@ -45,7 +44,7 @@ export function HomeBookCover({ onOpen }: HomeBookCoverProps) {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex min-h-screen w-full flex-col px-6 pb-14">
+      <div className="relative z-10 flex min-h-screen w-full flex-col px-6 pb-[5.75rem]">
         <div className="pointer-events-none flex justify-center pt-[11%] sm:pt-[12%]">
           <div className="relative flex flex-col items-center">
             <LogoRainbowHalo />
@@ -80,10 +79,6 @@ export function HomeBookCover({ onOpen }: HomeBookCoverProps) {
           >
             {copy.coverStartChat}
           </button>
-
-          <div className="pointer-events-none mt-6 w-full max-w-md">
-            <HartmaatjeDigitalClock variant="footer" />
-          </div>
         </div>
       </div>
     </div>
