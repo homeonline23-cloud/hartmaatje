@@ -48,16 +48,18 @@ export function HomeCharacterPortraits({
             }`}
           >
             <div
-              className={`overflow-hidden rounded-full border-[3px] ${PORTRAIT_RING_CLASS} shadow-[0_6px_16px_rgba(44,36,22,0.14)] ${
-                selected ? "border-[#2c4a22] ring-2 ring-[#4a6741]/30" : "border-white"
+              className={`rounded-full p-[4px] ${PORTRAIT_RING_CLASS} shadow-[0_6px_16px_rgba(44,36,22,0.18)] ${
+                selected ? "ring-2 ring-[#2c4a22]/50 ring-offset-2 ring-offset-white" : ""
               }`}
             >
-              <AvatarPortrait
-                identityId={id}
-                displayName={name}
-                size="lg"
-                className="border-0"
-              />
+              <div className="overflow-hidden rounded-full bg-white">
+                <AvatarPortrait
+                  identityId={id}
+                  displayName={name}
+                  size="lg"
+                  className="border-0"
+                />
+              </div>
             </div>
             <p
               className={`text-lg font-bold leading-none ${
