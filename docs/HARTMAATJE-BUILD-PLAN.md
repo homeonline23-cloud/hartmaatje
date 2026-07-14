@@ -214,3 +214,5 @@ cd backend && uvicorn app.main:app --reload --port 8000
 ---
 
 *This document lives next to the runnable scaffold in `backend/` and `frontend/`.*
+
+**Feature-prioriteiten (CSV):** zie [planning/FEATURE-ROADMAP.md](./planning/FEATURE-ROADMAP.md) en [planning/Feature-Tool-Purpose-Buildnoworlater.csv](./planning/Feature-Tool-Purpose-Buildnoworlater.csv).
