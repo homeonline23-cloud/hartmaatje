@@ -39,10 +39,10 @@ import {
   getCompanionVoiceAbortSignal,
   isCompanionVoiceSessionActive,
 } from "@/lib/fenna-voice/sessionControl";
-import { friendlyGeminiErrorMessage, isApiErrorPayload } from "@/lib/geminiErrors";
+import { friendlyGeminiErrorMessage, friendlyGeminiQuotaMessage, isApiErrorPayload } from "@/lib/geminiErrors";
 import { isTtsQuotaFailure, getTtsErrorMessage } from "@/lib/fenna-voice/speakFennaLine";
 import { CompanionApiError } from "@/lib/fenna-voice/fennaVoicePipeline";
-import { hartmaatjeApi, storeBackendSessionId, type FennaMessage } from "@/lib/hartmaatje-api/client";
+import { hartmaatjeApi, isBackendSessionId, storeBackendSessionId, type FennaMessage } from "@/lib/hartmaatje-api/client";
 import { getGeminiPlaybackRate } from "@/lib/voice/geminiVoiceConfig";
 import { getVoiceIdentity } from "@/lib/voice/registry";
 import type { VoiceIdentityId } from "@/lib/voice/types";
@@ -76,6 +76,8 @@ export function CompanionVoiceSession({
   const [micLevel, setMicLevel] = useState(0);
   const [micWarning, setMicWarning] = useState<string | null>(null);
   const [ttsWarning, setTtsWarning] = useState<string | null>(null);
+  const [textOnlyMode, setTextOnlyMode] = useState(false);
+  const [typedDraft, setTypedDraft] = useState("");
   const [welcomeOpen, setWelcomeOpen] = useState(() => hasWelcomeVideo(identityId));
 
   const sessionIdRef = useRef<string | null>(null);
@@ -91,6 +93,8 @@ export function CompanionVoiceSession({
   const addressFormRef = useRef<"formeel" | "informeel">("formeel");
   const ttsWarnedRef = useRef(false);
   const turnInFlightRef = useRef(false);
+  const phaseRef = useRef<Phase>("idle");
+  const textOnlyRef = useRef(false);
 
   function recoveryMessage(raw: string): string {
     if (raw.includes("lang") || raw.includes("long") || raw.includes("te lang")) {
@@ -134,6 +138,9 @@ export function CompanionVoiceSession({
     setError(null);
     setTtsWarning(null);
     ttsWarnedRef.current = false;
+    textOnlyRef.current = false;
+    setTextOnlyMode(false);
+    setTypedDraft("");
     setMicLive(false);
     setRecording(false);
   }, [identityId]);
@@ -155,9 +162,96 @@ export function CompanionVoiceSession({
     ]);
   }, []);
 
+  const addPendingUserMessage = useCallback(() => {
+    const id = `user-pending-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id,
+        role: "user",
+        content: langRef.current === "en" ? "…" : "…",
+      },
+    ]);
+    return id;
+  }, []);
+
+  const updateMessage = useCallback((id: string, content: string) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, content } : m)),
+    );
+  }, []);
+
+  const removeMessage = useCallback((id: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
+  const enableTextOnlyMode = useCallback(() => {
+    textOnlyRef.current = true;
+    setTextOnlyMode(true);
+    listenerRef.current?.pause();
+    setMicLive(false);
+    setRecording(false);
+    setPhase("listening");
+  }, []);
+
+  const sendTypedMessage = useCallback(async () => {
+    const text = typedDraft.trim();
+    const sid = sessionIdRef.current;
+    if (!text || !sid || turnInFlightRef.current) return;
+
+    turnInFlightRef.current = true;
+    setTypedDraft("");
+    setError(null);
+    setPhase("thinking");
+    addMessage("user", text);
+
+    try {
+      if (isBackendSessionId(sid)) {
+        const data = await hartmaatjeApi.sendMessage(sid, text, langRef.current);
+        if (!isApiErrorPayload(data.reply)) {
+          addMessage("assistant", data.reply);
+        }
+      } else {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            lang: langRef.current,
+            identityId: identityRef.current,
+            history: messagesRef.current.slice(-12).map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+            resident_id: residentIdRef.current,
+          }),
+        });
+        const data = (await res.json()) as { reply?: string; error?: string };
+        if (!res.ok || !data.reply) {
+          throw new Error(data.error ?? "Geen antwoord ontvangen.");
+        }
+        addMessage("assistant", data.reply);
+      }
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : app.errors.speechServiceFailed;
+      if (isRecoverableVoiceError(raw)) {
+        setTtsWarning(recoveryMessage(raw));
+      } else {
+        setError(friendlyGeminiErrorMessage(raw, langRef.current, displayName));
+      }
+    } finally {
+      turnInFlightRef.current = false;
+      setPhase("listening");
+    }
+  }, [addMessage, app.errors.speechServiceFailed, displayName, recoveryMessage, typedDraft]);
+
   useEffect(() => {
     langRef.current = lang;
   }, [lang]);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -189,6 +283,7 @@ export function CompanionVoiceSession({
 
     turnInFlightRef.current = true;
     const turnId = beginVoiceTurn();
+    const pendingUserId = addPendingUserMessage();
     const timings: TurnTimings = { vadEndAt: Date.now() };
     setPhase("thinking");
     setMicLive(false);
@@ -207,7 +302,10 @@ export function CompanionVoiceSession({
         identityRef.current,
         addressFormRef.current,
       );
-      if (!isCompanionVoiceSessionActive(gen)) return;
+      if (!isCompanionVoiceSessionActive(gen)) {
+        removeMessage(pendingUserId);
+        return;
+      }
       timings.apiEndAt = Date.now();
       markSttCompleted(turnId, turn.userText);
       markBackendCompleted(turnId, turn.timings_ms);
@@ -218,6 +316,7 @@ export function CompanionVoiceSession({
       });
 
       if (!turn.userText?.trim()) {
+        removeMessage(pendingUserId);
         const msg = recoveryMessage("empty");
         setTtsWarning(msg);
         recoverVoiceTurn(turnId);
@@ -225,6 +324,10 @@ export function CompanionVoiceSession({
       }
 
       if (!turn.reply?.trim()) {
+        updateMessage(
+          pendingUserId,
+          turn.userText,
+        );
         const msg = recoveryMessage("Geen antwoord");
         setTtsWarning(msg);
         recoverVoiceTurn(turnId);
@@ -236,32 +339,43 @@ export function CompanionVoiceSession({
       timings.playbackStartAt = Date.now();
       logTurnTimings("voice turn", timings);
 
-      if (turn.userText) addMessage("user", turn.userText);
+      updateMessage(pendingUserId, turn.userText);
       if (!isApiErrorPayload(turn.reply)) {
         addMessage("assistant", turn.reply);
       }
 
       try {
-        if (turn.replyAudioBase64) {
-          await playFennaAudio(
-            turn.replyAudioBase64,
-            turn.replyMimeType ?? "audio/mp3",
-            getGeminiPlaybackRate(identityRef.current),
-            () => isCompanionVoiceSessionActive(gen),
-          );
-        } else {
-          await playCompanionReply(
-            turn.reply,
-            langRef.current,
-            identityRef.current,
-            gen,
-            sid,
-          );
+        if (!textOnlyRef.current) {
+          if (turn.replyAudioBase64) {
+            await playFennaAudio(
+              turn.replyAudioBase64,
+              turn.replyMimeType ?? "audio/mp3",
+              getGeminiPlaybackRate(identityRef.current),
+              () => isCompanionVoiceSessionActive(gen),
+            );
+          } else {
+            await playCompanionReply(
+              turn.reply,
+              langRef.current,
+              identityRef.current,
+              gen,
+              sid,
+            );
+          }
+          // Korte pauze zodat speaker-echo de mic niet meteen onderbreekt.
+          await new Promise((resolve) => window.setTimeout(resolve, 500));
         }
       } catch (ttsErr) {
-        if (isTtsQuotaFailure(ttsErr) && !ttsWarnedRef.current) {
-          ttsWarnedRef.current = true;
-          setTtsWarning(getTtsErrorMessage(ttsErr));
+        if (isTtsQuotaFailure(ttsErr)) {
+          enableTextOnlyMode();
+          if (!ttsWarnedRef.current) {
+            ttsWarnedRef.current = true;
+            setTtsWarning(
+              ttsErr instanceof CompanionApiError
+                ? getTtsErrorMessage(ttsErr)
+                : friendlyGeminiQuotaMessage(displayName, langRef.current),
+            );
+          }
         } else if (!isTtsQuotaFailure(ttsErr)) {
           throw ttsErr;
         }
@@ -271,6 +385,7 @@ export function CompanionVoiceSession({
       if (!isCompanionVoiceSessionActive(gen)) return;
       if (err instanceof Error && err.name === "AbortError") return;
       speakingRef.current = false;
+      removeMessage(pendingUserId);
       const raw = err instanceof Error ? err.message : app.errors.speechServiceFailed;
       if (raw === "SESSION_ENDED") return;
       if (isRecoverableVoiceError(raw)) {
@@ -298,12 +413,13 @@ export function CompanionVoiceSession({
         setMicLive(true);
       }
     }
-  }, [addMessage, app.errors.speechServiceFailed, displayName]);
+  }, [addMessage, addPendingUserMessage, app.errors.speechServiceFailed, displayName, enableTextOnlyMode, removeMessage, updateMessage]);
 
   const startSession = useCallback(async () => {
     setError(null);
     setTtsWarning(null);
     ttsWarnedRef.current = false;
+    textOnlyRef.current = false;
     setMicWarning(null);
     setMicLevel(0);
     setMessages([]);
@@ -362,7 +478,11 @@ export function CompanionVoiceSession({
         onListeningChange: setMicLive,
         onRecordingChange: (rec) => {
           setRecording(rec);
-          if (rec && (speakingRef.current || isFennaAudioPlaying())) {
+          if (
+            rec &&
+            phaseRef.current !== "listening" &&
+            (speakingRef.current || isFennaAudioPlaying())
+          ) {
             interruptFennaAudio("user recording");
             speakingRef.current = false;
           }
@@ -386,9 +506,16 @@ export function CompanionVoiceSession({
       try {
         await speakCompanionLine(opening, lang, identityRef.current, gen, sessionIdRef.current);
       } catch (ttsErr) {
-        if (isTtsQuotaFailure(ttsErr) && !ttsWarnedRef.current) {
-          ttsWarnedRef.current = true;
-          setTtsWarning(getTtsErrorMessage(ttsErr));
+        if (isTtsQuotaFailure(ttsErr)) {
+          enableTextOnlyMode();
+          if (!ttsWarnedRef.current) {
+            ttsWarnedRef.current = true;
+            setTtsWarning(
+              ttsErr instanceof CompanionApiError
+                ? getTtsErrorMessage(ttsErr)
+                : friendlyGeminiQuotaMessage(displayName, lang),
+            );
+          }
         } else if (!isTtsQuotaFailure(ttsErr)) {
           throw ttsErr;
         }
@@ -396,9 +523,14 @@ export function CompanionVoiceSession({
       if (!isCompanionVoiceSessionActive(gen)) return;
       speakingRef.current = false;
 
-      listener.resume();
-      setPhase("listening");
-      setMicLive(true);
+      if (textOnlyRef.current) {
+        enableTextOnlyMode();
+      } else {
+        await new Promise((resolve) => window.setTimeout(resolve, 400));
+        listener.resume();
+        setPhase("listening");
+        setMicLive(true);
+      }
     } catch (err) {
       listenerRef.current?.stop();
       listenerRef.current = null;
@@ -415,7 +547,7 @@ export function CompanionVoiceSession({
       setSessionActive(false);
       sessionIdRef.current = null;
     }
-  }, [addMessage, displayName, lang, onUtterance]);
+  }, [addMessage, app.errors.speechServiceFailed, displayName, enableTextOnlyMode, lang, onUtterance]);
 
   const endSession = useCallback(() => {
     endCompanionVoiceSession();
@@ -558,6 +690,38 @@ export function CompanionVoiceSession({
         </p>
       ) : null}
       <div className="space-y-2">
+        {textOnlyMode ? (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-[#5c4a32]">
+              {lang === "en"
+                ? "Voice limit reached — type your message below:"
+                : "Stemlimiet bereikt — typ hieronder uw bericht:"}
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={typedDraft}
+                onChange={(e) => setTypedDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void sendTypedMessage();
+                }}
+                placeholder={
+                  lang === "en" ? "Type here…" : "Typ hier uw bericht…"
+                }
+                className="min-w-0 flex-1 rounded-xl border border-[#d8ccb8] bg-white px-3 py-2.5 text-base text-[#2c2416]"
+                aria-label={lang === "en" ? "Your message" : "Uw bericht"}
+              />
+              <button
+                type="button"
+                onClick={() => void sendTypedMessage()}
+                disabled={!typedDraft.trim() || phase === "thinking"}
+                className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50 ${companionStartButtonClass}`}
+              >
+                {lang === "en" ? "Send" : "Verstuur"}
+              </button>
+            </div>
+          </div>
+        ) : (
         <div
           className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${
             micLive
@@ -592,6 +756,7 @@ export function CompanionVoiceSession({
             ) : null}
           </div>
         </div>
+        )}
         {micWarning ? (
           <p
             role="alert"
@@ -697,7 +862,7 @@ export function CompanionVoiceSession({
 
       <div
         ref={transcriptRef}
-        className="min-h-0 flex-1 overflow-y-auto px-3 py-2"
+        className="min-h-[9rem] flex-1 overflow-y-auto px-3 py-2"
       >
         {messages.length > 0 ? (
           <div className="space-y-2">

@@ -59,3 +59,6 @@ backend/data/**/*.db
 !backend/data/care_notes/.gitkeep
 /data/memory/
 backend/.env
+
+# large media — deploy via scp/rsync, not git
+public/videos/*.mp4

@@ -1,0 +1,16 @@
+[Unit]
+Description=HartMaatje Next.js frontend
+After=network.target hartmaatje-backend.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/hartmaatje/web
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

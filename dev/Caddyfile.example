@@ -1,0 +1,11 @@
+# Vervang jouwdomein.nl door je echte domein.
+# Plaats op server: /etc/caddy/Caddyfile
+# Daarna: sudo systemctl reload caddy
+
+jouwdomein.nl, www.jouwdomein.nl {
+	reverse_proxy 127.0.0.1:3000
+}
+
+api.jouwdomein.nl {
+	reverse_proxy 127.0.0.1:8000
+}

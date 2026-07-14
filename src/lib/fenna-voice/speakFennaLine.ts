@@ -72,6 +72,10 @@ export async function fetchCompanionSpeech(
         };
       }
     } catch (err) {
+      voiceLog("backend TTS failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      if (isTtsQuotaFailure(err)) throw err;
       voiceLog("backend TTS failed — fallback to Next.js", {
         error: err instanceof Error ? err.message : String(err),
       });
@@ -143,7 +147,36 @@ async function playGeminiSpeech(
   }
 
   const playbackRate = getGeminiPlaybackRate(identityId);
-  const { first, rest } = splitForFastSpeech(text);
+  const cleaned = text.trim();
+  if (!cleaned) return;
+
+  // Eén TTS-aanvraag voor normale antwoorden — voorkomt afgekapte zinnen.
+  if (cleaned.length <= 900) {
+    const clip = await fetchCompanionSpeech(
+      cleaned,
+      lang,
+      identityId,
+      sessionGeneration,
+      sessionId,
+    );
+    if (
+      sessionGeneration !== undefined &&
+      !isCompanionVoiceSessionActive(sessionGeneration)
+    ) {
+      return;
+    }
+    await playFennaAudio(
+      clip.audioBase64,
+      clip.mimeType,
+      playbackRate,
+      () =>
+        sessionGeneration === undefined ||
+        isCompanionVoiceSessionActive(sessionGeneration),
+    );
+    return;
+  }
+
+  const { first, rest } = splitForFastSpeech(cleaned);
   const firstPromise = fetchCompanionSpeech(
     first,
     lang,
@@ -152,9 +185,7 @@ async function playGeminiSpeech(
     sessionId,
   );
   const restPromise = rest
-    ? fetchCompanionSpeech(rest, lang, identityId, sessionGeneration, sessionId).catch(
-        () => null,
-      )
+    ? fetchCompanionSpeech(rest, lang, identityId, sessionGeneration, sessionId)
     : null;
 
   const firstClip = await firstPromise;
@@ -174,7 +205,21 @@ async function playGeminiSpeech(
   );
 
   if (restPromise) {
-    const restClip = await restPromise;
+    let restClip: CompanionSpeechClip | null = null;
+    try {
+      restClip = await restPromise;
+    } catch (err) {
+      voiceLog("TTS rest chunk failed — retry once", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      restClip = await fetchCompanionSpeech(
+        rest,
+        lang,
+        identityId,
+        sessionGeneration,
+        sessionId,
+      );
+    }
     if (
       !restClip ||
       (sessionGeneration !== undefined &&
@@ -193,10 +238,8 @@ async function playGeminiSpeech(
   }
 }
 
-/** Alleen Gemini TTS in productie — in development browser-fallback bij quota. */
-const GEMINI_TTS_ONLY =
-  process.env.NODE_ENV === "production" &&
-  process.env.NEXT_PUBLIC_VOICE_GEMINI_ONLY !== "false";
+/** Geen browser-stem fallback tenzij expliciet aan — Windows klinkt vaak Engels/hakkelend. */
+const GEMINI_TTS_ONLY = process.env.NEXT_PUBLIC_VOICE_GEMINI_ONLY !== "false";
 
 export function isTtsQuotaFailure(err: unknown): boolean {
   if (err instanceof CompanionApiError) return Boolean(err.meta.quotaExceeded);

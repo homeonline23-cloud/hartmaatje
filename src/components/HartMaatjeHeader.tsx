@@ -10,10 +10,10 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useHomeCompanionOptional } from "@/context/HomeCompanionContext";
 
 const navBtn =
-  "flex h-12 w-full min-w-0 items-center justify-center rounded-2xl px-1.5 py-2 text-center text-sm font-bold leading-tight touch-manipulation active:scale-[0.98] transition sm:px-2 sm:text-base";
+  "flex h-9 w-full min-w-0 items-center justify-center rounded-xl px-1 py-1 text-center text-xs font-bold leading-tight touch-manipulation active:scale-[0.98] transition sm:h-10 sm:px-1.5 sm:text-sm";
 
 const navActive =
-  "bg-white text-[#3f6339] shadow-[0_8px_18px_rgba(255,255,255,0.28)] ring-2 ring-white/60";
+  "bg-white text-[#3f6339] shadow-[0_6px_14px_rgba(255,255,255,0.28)] ring-2 ring-white/60";
 const navIdle =
   "bg-white/18 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.28)] hover:bg-white/28";
 
@@ -21,12 +21,16 @@ export function HartMaatjeHeader() {
   const pathname = usePathname();
   const { copy, app } = useLanguage();
 
-  const navItems = [
+  const primaryNav = [
+    { href: "/app/video", label: copy.navVideo },
+    { href: "/app/over", label: copy.navAbout },
+    { href: "/app/prijzen", label: copy.navPricing },
+  ] as const;
+
+  const secondaryNav = [
     { href: "/", label: copy.navHome },
     { href: "/app/geheugen", label: copy.navMemory },
     { href: "/app/instellingen", label: copy.navSettings },
-    { href: "/app/over", label: copy.navAbout },
-    { href: "/app/prijzen", label: copy.navPricing },
   ] as const;
 
   const isActive = (href: string) =>
@@ -66,23 +70,36 @@ export function HartMaatjeHeader() {
         </div>
 
         <nav
-          className="mt-4 grid w-full grid-cols-3 gap-2"
+          className="mt-3 flex w-full flex-col gap-1.5 sm:gap-2"
           aria-label={app.header.mainNavAria}
         >
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={item.href === "/" ? (e) => goCleanHome(e) : undefined}
-              className={`${navBtn} ${isActive(item.href) ? navActive : navIdle}`}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <LanguagePicker
-            className="min-w-0"
-            buttonClassName={`${navBtn} ${navIdle}`}
-          />
+          <div className="grid w-full grid-cols-4 gap-1.5 sm:gap-2">
+            {primaryNav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`${navBtn} ${isActive(item.href) ? navActive : navIdle}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <LanguagePicker
+              className="min-w-0"
+              buttonClassName={`${navBtn} ${navIdle}`}
+            />
+          </div>
+          <div className="grid w-full grid-cols-3 gap-1.5 sm:gap-2">
+            {secondaryNav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={item.href === "/" ? (e) => goCleanHome(e) : undefined}
+                className={`${navBtn} ${isActive(item.href) ? navActive : navIdle}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </nav>
       </div>
     </header>

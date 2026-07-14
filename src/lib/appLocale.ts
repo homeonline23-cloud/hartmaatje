@@ -28,6 +28,9 @@ type HomeCopy = {
   navSettings: string;
   navAbout: string;
   navPricing: string;
+  navVideo: string;
+  videoPageTitle: string;
+  videoPageIntro: string;
   langPickerButton: string;
   langPickerTitle: string;
   langPickerClose: string;
@@ -73,6 +76,9 @@ const COPY: Record<CoreLang, HomeCopy> = {
     navSettings: "Instellingen",
     navAbout: "Over",
     navPricing: "Prijs",
+    navVideo: "Video",
+    videoPageTitle: "Het verhaal van HartMaatje",
+    videoPageIntro: "Bekijk het verhaal over het ontstaan van HartMaatje.",
     langPickerButton: "Taal",
     langPickerTitle: "Kies uw taal",
     langPickerClose: "Sluiten",
@@ -120,6 +126,9 @@ const COPY: Record<CoreLang, HomeCopy> = {
     navSettings: "Settings",
     navAbout: "About",
     navPricing: "Pricing",
+    navVideo: "Video",
+    videoPageTitle: "The HartMaatje story",
+    videoPageIntro: "Watch the story of how HartMaatje began.",
     langPickerButton: "Language",
     langPickerTitle: "Choose your language",
     langPickerClose: "Close",

@@ -1,0 +1,15 @@
+[Unit]
+Description=HartMaatje FastAPI backend
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/hartmaatje/web/backend
+EnvironmentFile=/opt/hartmaatje/web/backend/.env
+ExecStart=/opt/hartmaatje/web/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -23,6 +23,10 @@ TTS_CHUNK_CHARS = 220
 TTS_MAX_RETRIES = 1
 
 
+class TtsQuotaError(Exception):
+    """Gemini TTS daily/minute quota exceeded."""
+
+
 def text_for_speech(text: str, max_sentences: int = 3) -> str:
     """Limit TTS length for faster voice playback; full text still shown on screen."""
     cleaned = " ".join(text.replace("**", "").split())
@@ -115,6 +119,8 @@ async def _synthesize_chunk_once(text: str, lang: AppLang) -> Optional[tuple[byt
 
     async with httpx.AsyncClient(timeout=35.0) as client:
         res = await client.post(url, json=body)
+        if res.status_code == 429 or "quota" in res.text.lower():
+            raise TtsQuotaError("Gemini TTS quota exceeded")
         if not res.is_success:
             logger.error("TTS error %s", res.text[:200])
             return None
@@ -135,6 +141,8 @@ async def _synthesize_chunk(text: str, lang: AppLang) -> Optional[tuple[bytes, s
             result = await _synthesize_chunk_once(text, lang)
             if result:
                 return result
+        except TtsQuotaError:
+            raise
         except Exception as exc:
             logger.warning("TTS chunk attempt %s failed: %s", attempt + 1, exc)
         if attempt < TTS_MAX_RETRIES:
@@ -223,6 +231,8 @@ async def synthesize_fenna_speech(
 
     parts: list[tuple[bytes, str]] = []
     for i, result in enumerate(results):
+        if isinstance(result, TtsQuotaError):
+            raise result
         if isinstance(result, Exception):
             logger.error("TTS chunk %s exception: %s", i, result)
             retry = await _synthesize_chunk(chunks[i], lang)

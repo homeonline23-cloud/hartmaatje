@@ -15,7 +15,7 @@ from app.services.chat.chat_turn import process_user_message
 from app.services.chat.lang import resolve_session_lang
 from app.services.chat.session_manager import session_manager
 from app.services.chat.speech import transcribe_audio
-from app.services.chat.tts import synthesize_fenna_speech
+from app.services.chat.tts import synthesize_fenna_speech, TtsQuotaError
 from app.services.chat.voice_pipeline import process_voice_turn
 
 router = APIRouter(tags=["chat", "speech"])
@@ -90,7 +90,10 @@ async def speech_speak(body: SpeakRequest) -> SpeakResponse:
     if not session:
         raise HTTPException(status_code=404, detail="Sessie niet actief.")
     lang = resolve_session_lang(session, body.lang)
-    audio = await synthesize_fenna_speech(body.text, lang)
+    try:
+        audio = await synthesize_fenna_speech(body.text, lang)
+    except TtsQuotaError as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
     if not audio:
         raise HTTPException(status_code=503, detail="Spraak kon niet worden gemaakt.")
     b64, mime = audio

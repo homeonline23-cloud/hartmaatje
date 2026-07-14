@@ -35,6 +35,13 @@ export {
   getCompanionOpening,
 } from "@/lib/companion/openings";
 
+import { CompanionApiError } from "@/lib/http/companionApiError";
+import {
+  buildRateLimitMeta,
+  friendlyGeminiQuotaMessage,
+  isGeminiQuotaError,
+} from "@/lib/geminiErrors";
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -57,7 +64,16 @@ async function request<T>(
       error?: string;
     };
     if (!res.ok) {
-      throw new Error(data.detail ?? data.error ?? `Error ${res.status}`);
+      const raw = String(data.detail ?? data.error ?? `Error ${res.status}`);
+      const quota = res.status === 429 || isGeminiQuotaError(raw);
+      if (quota) {
+        const meta = buildRateLimitMeta("nl", true);
+        throw new CompanionApiError(
+          friendlyGeminiQuotaMessage("Fenna", "nl", meta.resetHint),
+          { status: res.status, quotaExceeded: true, ...meta },
+        );
+      }
+      throw new Error(raw);
     }
     return data;
   } catch (err) {

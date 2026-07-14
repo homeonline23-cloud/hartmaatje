@@ -9,4 +9,5 @@
 | `docs/planning/` | Feature-roadmap CSV + [FEATURE-ROADMAP.md](./planning/FEATURE-ROADMAP.md) |
 
 Zie **SETUP-GUIDE.md** voor het opnieuw opzetten van Supabase + Gemini.  
-Zie **planning/FEATURE-ROADMAP.md** voor wat nu vs later gebouwd wordt.
+Zie **planning/FEATURE-ROADMAP.md** voor wat nu vs later gebouwd wordt.  
+Zie **../dev/HETZNER-DEPLOY.md** voor deploy op Hetzner VPS (productie).
