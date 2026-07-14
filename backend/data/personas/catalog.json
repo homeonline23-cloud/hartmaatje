@@ -1,0 +1,11 @@
+{
+  "version": "2.1",
+  "app": "Hartmaatje",
+  "language": "nl-NL",
+  "personas": [
+    "fenna",
+    "maarten",
+    "peter",
+    "colette"
+  ]
+}

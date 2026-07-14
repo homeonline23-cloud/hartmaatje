@@ -51,6 +51,11 @@ next-env.d.ts
 backend/.venv/
 backend/__pycache__/
 backend/**/__pycache__/
-backend/data/
+backend/data/memory/
+backend/data/**/*.db
+!backend/data/personas/
+!backend/data/personas/**
+!backend/data/care_notes/
+!backend/data/care_notes/.gitkeep
 /data/memory/
 backend/.env
