@@ -1,4 +1,10 @@
 import { voiceLog } from "@/lib/fenna-voice/voiceLogger";
+import {
+  getCurrentVoiceTurnId,
+  markTtsCompleted,
+  markTtsFirstAudio,
+  recordVoiceInterrupt,
+} from "@/lib/fenna-voice/voiceMetrics";
 
 let currentAudio: HTMLAudioElement | null = null;
 let playGeneration = 0;
@@ -24,6 +30,7 @@ export async function unlockAudioPlayback(): Promise<void> {
 /** Stop Fenna mid-sentence — only when the user starts speaking again. */
 export function interruptFennaAudio(reason = "user interrupt"): void {
   if (!playing && !currentAudio) return;
+  recordVoiceInterrupt();
   voiceLog("TTS interrupt", { reason });
   playGeneration += 1;
   if (currentAudio) {
@@ -79,6 +86,8 @@ export async function playFennaAudio(
   audio.playbackRate = Math.min(1.15, Math.max(0.75, playbackRate));
   currentAudio = audio;
   playing = true;
+  const turnId = getCurrentVoiceTurnId();
+  if (turnId) markTtsFirstAudio(turnId);
   voiceLog("TTS start", { mime: prepared.mime, bytes: bytes.length });
 
   try {
@@ -93,6 +102,7 @@ export async function playFennaAudio(
           return;
         }
         voiceLog("TTS end (finished naturally)");
+        if (turnId) markTtsCompleted(turnId);
         playing = false;
         if (currentAudio === audio) currentAudio = null;
         URL.revokeObjectURL(url);

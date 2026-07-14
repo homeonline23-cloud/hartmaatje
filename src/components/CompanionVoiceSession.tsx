@@ -20,6 +20,16 @@ import {
 } from "@/lib/fenna-voice/playback";
 import { playCompanionReply, speakCompanionLine } from "@/lib/fenna-voice/speakFennaLine";
 import { logTurnTimings, type TurnTimings } from "@/lib/fenna-voice/turnTiming";
+import {
+  beginVoiceTurn,
+  completeVoiceTurn,
+  exposeVoiceMetricsGlobally,
+  failVoiceTurn,
+  markBackendCompleted,
+  markSttCompleted,
+  recoverVoiceTurn,
+  snapshotVoiceMetrics,
+} from "@/lib/fenna-voice/voiceMetrics";
 import { MicAccessError } from "@/lib/fenna-voice/micAccess";
 import { logVoiceTranscriptLine, voiceLog } from "@/lib/fenna-voice/voiceLogger";
 import {
@@ -78,6 +88,31 @@ export function CompanionVoiceSession({
   const transcriptRef = useRef<HTMLDivElement>(null);
   const addressFormRef = useRef<"formeel" | "informeel">("formeel");
   const ttsWarnedRef = useRef(false);
+  const turnInFlightRef = useRef(false);
+
+  function recoveryMessage(raw: string): string {
+    if (raw.includes("lang") || raw.includes("long") || raw.includes("te lang")) {
+      return langRef.current === "en"
+        ? "That took a moment — please speak again when you're ready."
+        : "Het duurde even — praat gerust nog eens als u wilt.";
+    }
+    if (raw.includes("verstaan") || raw.includes("understand") || raw.includes("empty")) {
+      return langRef.current === "en"
+        ? "I didn't catch that — could you say it once more?"
+        : "Ik heb u niet goed verstaan — wilt u het nog een keer zeggen?";
+    }
+    return langRef.current === "en"
+      ? "Something went wrong — you can try speaking again."
+      : "Er ging iets mis — u kunt het gerust nog eens proberen.";
+  }
+
+  function isRecoverableVoiceError(raw: string): boolean {
+    return (
+      raw !== "SESSION_ENDED" &&
+      !raw.toLowerCase().includes("microphone") &&
+      !raw.toLowerCase().includes("microfoon")
+    );
+  }
 
   useEffect(() => {
     addressFormRef.current =
@@ -145,7 +180,13 @@ export function CompanionVoiceSession({
     const sid = sessionIdRef.current;
     const gen = sessionGenRef.current;
     if (!sid || !isCompanionVoiceSessionActive(gen)) return;
+    if (turnInFlightRef.current) {
+      voiceLog("turn skipped — previous turn still in flight");
+      return;
+    }
 
+    turnInFlightRef.current = true;
+    const turnId = beginVoiceTurn();
     const timings: TurnTimings = { vadEndAt: Date.now() };
     setPhase("thinking");
     setMicLive(false);
@@ -166,17 +207,26 @@ export function CompanionVoiceSession({
       );
       if (!isCompanionVoiceSessionActive(gen)) return;
       timings.apiEndAt = Date.now();
+      markSttCompleted(turnId, turn.userText);
+      markBackendCompleted(turnId, turn.timings_ms);
       voiceLog("reply ready — starting TTS on client", {
         chars: turn.reply.length,
         timings_ms: turn.timings_ms,
+        metrics: snapshotVoiceMetrics().counters,
       });
 
+      if (!turn.userText?.trim()) {
+        const msg = recoveryMessage("empty");
+        setTtsWarning(msg);
+        recoverVoiceTurn(turnId);
+        return;
+      }
+
       if (!turn.reply?.trim()) {
-        throw new Error(
-          langRef.current === "en"
-            ? "No reply received — please try again."
-            : "Geen antwoord ontvangen — probeer het nog eens.",
-        );
+        const msg = recoveryMessage("Geen antwoord");
+        setTtsWarning(msg);
+        recoverVoiceTurn(turnId);
+        return;
       }
 
       setPhase("speaking");
@@ -204,12 +254,23 @@ export function CompanionVoiceSession({
           throw ttsErr;
         }
       }
+      completeVoiceTurn(turnId);
     } catch (err) {
       if (!isCompanionVoiceSessionActive(gen)) return;
       if (err instanceof Error && err.name === "AbortError") return;
       speakingRef.current = false;
       const raw = err instanceof Error ? err.message : app.errors.speechServiceFailed;
       if (raw === "SESSION_ENDED") return;
+      if (isRecoverableVoiceError(raw)) {
+        setTtsWarning(
+          err instanceof CompanionApiError
+            ? getTtsErrorMessage(err)
+            : recoveryMessage(raw),
+        );
+        recoverVoiceTurn(turnId);
+        return;
+      }
+      failVoiceTurn(turnId, raw);
       setError(
         err instanceof CompanionApiError
           ? getTtsErrorMessage(err)
@@ -217,6 +278,7 @@ export function CompanionVoiceSession({
       );
       setPhase("error");
     } finally {
+      turnInFlightRef.current = false;
       if (isCompanionVoiceSessionActive(gen) && sessionIdRef.current) {
         speakingRef.current = false;
         listenerRef.current?.resume();
@@ -264,6 +326,7 @@ export function CompanionVoiceSession({
           : "guest";
       const gen = beginCompanionVoiceSession();
       sessionGenRef.current = gen;
+      exposeVoiceMetricsGlobally();
       setSessionActive(true);
 
       const opening = getCompanionOpening(identityRef.current, lang);

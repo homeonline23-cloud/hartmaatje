@@ -11,7 +11,8 @@
     "test:safety": "npx tsx --test src/lib/companion/safetyTestMatrix.test.ts",
     "test:consent": "npx tsx --test src/lib/consent/consentKinds.test.ts",
     "test:production": "npx tsx --test src/lib/companion/productionConfig.test.ts",
-    "test:conversation": "npx tsx --test src/lib/companion/conversationLogic.test.ts"
+    "test:conversation": "npx tsx --test src/lib/companion/conversationLogic.test.ts",
+    "test:voice-metrics": "npx tsx --test src/lib/fenna-voice/voiceMetrics.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.10.0",

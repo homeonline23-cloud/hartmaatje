@@ -15,6 +15,9 @@ _METRIC_HELP = {
     "safety_triggered_total": "Turns where safety handling was triggered",
     "reply_retried_total": "Turns where the LLM reply was retried",
     "response_length_sum": "Cumulative assistant response length in characters",
+    "voice_turn_failed_total": "Voice turns that failed without recovery",
+    "voice_turn_recovered_total": "Voice turns that failed but returned to listening",
+    "voice_interrupt_total": "User interruptions during TTS playback",
 }
 
 
@@ -35,6 +38,16 @@ def record_turn(payload: dict) -> None:
     if payload.get("reply_retried"):
         record_turn_metric("reply_retried_total")
     record_turn_metric("response_length_sum", float(payload.get("response_length", 0)))
+
+
+def record_voice_client_metrics(payload: dict) -> None:
+    """Optional client-reported voice metrics (future POST /admin/voice-metrics)."""
+    if payload.get("failed"):
+        record_turn_metric("voice_turn_failed_total")
+    if payload.get("recovered"):
+        record_turn_metric("voice_turn_recovered_total")
+    if payload.get("interrupted"):
+        record_turn_metric("voice_interrupt_total")
 
 
 def snapshot() -> dict[str, float]:

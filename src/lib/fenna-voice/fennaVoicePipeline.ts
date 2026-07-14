@@ -63,7 +63,7 @@ async function nextJsTurn(
         }),
         signal: timeoutController.signal,
       },
-      { signal: timeoutController.signal, maxAttempts: 3 },
+      { signal: timeoutController.signal, maxAttempts: 1 },
     );
 
     const data = (await res.json()) as {
