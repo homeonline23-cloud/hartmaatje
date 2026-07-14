@@ -30,7 +30,10 @@ class Settings(BaseSettings):
     fenna_voice_name: str = "Aoede"
 
     memory_data_path: str = "./data/memory"
+    memory_backend: str = "json"  # json | sqlite | postgres
+    database_url: str = ""
     persona_config_path: str = ""
+    personas_dir: str = ""
 
     staff_alert_webhook_url: str = ""
     staff_alert_webhook_secret: str = ""
@@ -39,6 +42,12 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def resolved_personas_dir(self) -> Path:
+        if self.personas_dir.strip():
+            return Path(self.personas_dir)
+        return BACKEND_ROOT / "data" / "personas"
 
     @property
     def resolved_persona_config_path(self) -> Path:

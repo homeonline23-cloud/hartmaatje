@@ -1,5 +1,18 @@
-"""Backward-compatible stub — use web_search_tool via tool_router."""
+"""Research tool — web lookup facade for the tools layer."""
 
-from app.services.tools.web_search_tool import fetch_web_context
+from __future__ import annotations
 
-__all__ = ["fetch_web_context"]
+from typing import Literal
+
+from app.services.tools import web_search_tool
+
+AppLang = Literal["nl", "en"]
+
+
+def wants_research(query: str) -> bool:
+    return web_search_tool.wants_web_search(query)
+
+
+async def fetch_research_context(query: str, lang: AppLang = "nl") -> str:
+    _ = lang
+    return await web_search_tool.fetch_web_context(query)

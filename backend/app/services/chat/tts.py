@@ -14,7 +14,7 @@ from typing import Literal, Optional
 import httpx
 
 from app.core.config import get_settings
-from app.prompts import normalize_lang
+from app.core.lang import normalize_lang
 
 logger = logging.getLogger(__name__)
 AppLang = Literal["nl", "en"]

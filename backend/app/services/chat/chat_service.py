@@ -143,7 +143,7 @@ class ChatOrchestrator:
         )
 
         # 6. Memory / tool selection
-        plan = await apply_tools(plan, user_text, lang)
+        plan = await apply_tools(plan, user_text, lang, resident_id=session.resident_id)
 
         # 7. Prompt builder
         system_prompt = build_system_prompt(

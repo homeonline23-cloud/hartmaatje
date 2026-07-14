@@ -75,7 +75,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | GET | `/personas` | List available companions |
 | GET | `/personas/{id}` | Persona detail (fenna/maarten/peter/colette) |
 | GET | `/admin/status` | Ops status (personas, config flags) |
-| GET | `/admin/metrics` | In-process turn counters |
+| GET | `/admin/metrics` | In-process turn counters (JSON) |
+| GET | `/admin/metrics/prometheus` | Prometheus text exposition |
+| GET | `/api/v1/*` | Versioned mirror of core routes |
 | POST | `/session/start` | Start session (`character_id`: fenna/maarten/peter/colette) |
 | POST | `/session/end` | User ends session |
 | POST | `/chat/message` | Send text → companion reply + safety + memory |
@@ -106,11 +108,12 @@ backend/
       quality/            # post-LLM validation
       observability/      # structured logging, metrics
     repositories/         # memory_repository (JSON)
-    prompts/              # YAML reference + normalize_lang helper
+    prompts/              # YAML reference (single copy in services/prompts/)
   tests/
     unit/
     integration/
-  data/memory/            # Created at runtime
+  data/personas/            # catalog.json + per-persona JSON
+  data/care_notes/          # optional staff notes per resident
   requirements.txt
   .env.example
 ```
@@ -130,5 +133,5 @@ pytest -q
 - **Safety** triggers webhook on emergency/distress phrases.
 - **Avatar** is not in this backend — add later as a presentation layer using the same `/chat/message` output.
 
-See `docs/BACKEND-STRUCTURE.md` for the full folder mapping and remaining TODOs.
+See `docs/BACKEND-STRUCTURE.md` for the full folder mapping and configuration.
 See `../docs/HARTMAATJE-BUILD-PLAN.md` for the full build plan.

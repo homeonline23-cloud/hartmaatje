@@ -16,8 +16,7 @@ IntentId = Literal[
 ]
 
 ToneMode = Literal["warm_soft", "clear_explain", "warm_normal", "supportive"]
-ToolAction = Literal["research"]
-# TODO: future tools — calendar, reminders, care_notes
+ToolAction = Literal["research", "calendar", "care_notes"]
 
 
 class ClassifiedIntent(BaseModel):

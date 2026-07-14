@@ -50,6 +50,11 @@ INTENT_LEXICON: dict[IntentId, dict[str, list[str]]] = {
             "hoeveel",
             "kun je me vertellen",
             "wat moet ik",
+            "agenda",
+            "afspraak",
+            "bezoek",
+            "zorgnotitie",
+            "medicatie",
         ],
         "en": [
             "what time",
@@ -60,6 +65,11 @@ INTENT_LEXICON: dict[IntentId, dict[str, list[str]]] = {
             "how many",
             "can you tell me",
             "what should i",
+            "calendar",
+            "appointment",
+            "visit",
+            "care note",
+            "medication",
         ],
     },
     "emotional_support": {

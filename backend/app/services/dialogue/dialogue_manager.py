@@ -10,6 +10,8 @@ from app.domain.models.nlu import NluResult
 from app.services.memory.memory_service import MemoryContext
 from app.services.safety.safety_guard import GuardResult
 
+from app.services.tools import calendar_tool, care_notes_tool
+
 AppLang = Literal["nl", "en"]
 
 
@@ -63,6 +65,22 @@ def decide_dialogue(
         )
 
     if intent_id == "practical_question":
+        if _wants_calendar(user_text):
+            return DialogueDecision(
+                use_memory=True,
+                tool_action="calendar",
+                tone_mode="clear_explain",
+                follow_up_allowed=False,
+                max_questions=0,
+            )
+        if _wants_care_notes(user_text):
+            return DialogueDecision(
+                use_memory=True,
+                tool_action="care_notes",
+                tone_mode="clear_explain",
+                follow_up_allowed=False,
+                max_questions=0,
+            )
         return DialogueDecision(
             use_memory=False,
             tone_mode="clear_explain",
@@ -107,3 +125,11 @@ def _is_short_greeting(text: str) -> bool:
         return False
     greetings = ("hallo", "hoi", "dag", "hello", "hi", "goedemorgen", "goedenavond", "hey")
     return any(g in lower for g in greetings)
+
+
+def _wants_calendar(text: str) -> bool:
+    return calendar_tool.wants_calendar(text)
+
+
+def _wants_care_notes(text: str) -> bool:
+    return care_notes_tool.wants_care_notes(text)

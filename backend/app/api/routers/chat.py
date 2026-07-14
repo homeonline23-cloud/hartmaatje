@@ -10,7 +10,7 @@ from app.schemas import (
     VoiceTurnRequest,
     VoiceTurnResponse,
 )
-from app.prompts import normalize_lang
+from app.core.lang import normalize_lang
 from app.services.chat.chat_turn import process_user_message
 from app.services.chat.lang import resolve_session_lang
 from app.services.chat.session_manager import session_manager

@@ -1,9 +1,9 @@
 """Admin / ops endpoints — lightweight status for care-home pilots."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 
 from app.core.config import get_settings
-from app.services.observability.metrics import snapshot
+from app.services.observability.metrics import snapshot, to_prometheus_text
 from app.services.personas.persona_loader import VALID_PERSONA_IDS
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -18,10 +18,15 @@ async def admin_status() -> dict:
         "gemini_configured": bool(settings.gemini_api_key),
         "staff_webhook_configured": bool(settings.staff_alert_webhook_url),
         "care_home_id": settings.care_home_id,
+        "memory_backend": settings.memory_backend,
     }
 
 
 @router.get("/metrics")
 async def admin_metrics() -> dict:
-    """In-process turn counters — replace with Prometheus export later."""
     return {"metrics": snapshot()}
+
+
+@router.get("/metrics/prometheus")
+async def admin_metrics_prometheus() -> Response:
+    return Response(content=to_prometheus_text(), media_type="text/plain; version=0.0.4")

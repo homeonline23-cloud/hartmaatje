@@ -256,4 +256,21 @@ class MemoryStore:
 
 def get_memory_store() -> MemoryStore:
     settings = get_settings()
+    backend = settings.memory_backend.strip().lower()
+
+    if backend == "sqlite":
+        from app.repositories.sqlite_memory_repository import SqliteMemoryStore
+
+        db_path = settings.database_url.strip() or str(
+            Path(settings.memory_data_path) / "resident_memory.db"
+        )
+        return SqliteMemoryStore(db_path)
+
+    if backend == "postgres":
+        from app.repositories.postgres_memory_repository import PostgresMemoryStore
+
+        if not settings.database_url.strip():
+            raise RuntimeError("MEMORY_BACKEND=postgres requires DATABASE_URL")
+        return PostgresMemoryStore(settings.database_url.strip())
+
     return MemoryStore(settings.memory_data_path)

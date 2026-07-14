@@ -6,7 +6,7 @@ from app.schemas import (
     SessionStartRequest,
     SessionStartResponse,
 )
-from app.prompts import normalize_lang
+from app.core.lang import normalize_lang
 from app.services.personas.persona_loader import get_intro_line, normalize_persona_id
 from app.services.chat.session_manager import session_manager
 

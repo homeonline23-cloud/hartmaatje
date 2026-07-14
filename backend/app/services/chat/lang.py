@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from app.prompts import normalize_lang
+from app.core.lang import normalize_lang
 from app.services.chat.session_manager import Session
 
 AppLang = Literal["nl", "en"]

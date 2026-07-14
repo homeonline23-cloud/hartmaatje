@@ -14,6 +14,8 @@ async def apply_tools(
     plan: ResponsePlan,
     query: str,
     lang: AppLang = "nl",
+    *,
+    resident_id: str = "guest",
 ) -> ResponsePlan:
     """
     Run tools requested by the response plan and attach context.
@@ -23,7 +25,12 @@ async def apply_tools(
     if not plan.tool_action:
         return plan
 
-    context, used = await route_tool(plan.tool_action, query, lang)
+    context, used = await route_tool(
+        plan.tool_action,
+        query,
+        lang,
+        resident_id=resident_id,
+    )
     return plan.model_copy(
         update={
             "tool_context": context,
