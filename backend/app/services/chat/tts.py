@@ -25,16 +25,28 @@ AppLang = Literal["nl", "en"]
 TTS_CHUNK_CHARS = 220
 TTS_MAX_RETRIES = 1
 
-# Persona voice/style description used in the TTS prompt — mirrors the `personaNl`/
-# `personaEn` text in src/lib/voice/geminiVoiceConfig.ts for each character.
+# Persona voice/style description used in the TTS prompt — copied word-for-word from
+# PROFILES[*].personaNl / personaEn in src/lib/voice/geminiVoiceConfig.ts. Keep these
+# in sync manually: any drift here means the backend (safety replies, /speech/speak,
+# and welcome-video redubs) and the client (/api/companion-speak, normal live turns)
+# would ask Gemini TTS for subtly different deliveries even though the voice NAME is
+# the same — which is exactly the kind of "close but not quite" mismatch this whole
+# persona-voice fix is meant to eliminate.
 _PERSONA_STYLE: dict[str, dict[AppLang, str]] = {
     "fenna": {
-        "nl": "Fenna — warme, duidelijke Nederlandse vrouwenstem voor ouderen.",
-        "en": "Fenna — warm, clear English female voice for older adults.",
+        "nl": (
+            "Fenna — rustige Nederlandse vrouwenstem, 60-plus. Praat natuurlijk en "
+            "gelijkwaardig, alsof u met een bekende aan tafel zit — niet zoet of "
+            "bewonderend voorlezen. Rustig tempo, levendige intonatie, korte adempauzes."
+        ),
+        "en": (
+            "Fenna — calm female voice. Natural, equal conversation — not sugary or "
+            "gushing. Calm pace with gentle pauses."
+        ),
     },
     "colette": {
-        "nl": "Colette — warme, heldere Nederlandse vrouwenstem, rustig en duidelijk.",
-        "en": "Colette — warm, clear adult female voice — calm and reassuring.",
+        "nl": "Warme, heldere Nederlandse vrouwenstem — volwassen vrouw, rustig en duidelijk.",
+        "en": "Warm, clear adult female voice — calm and reassuring.",
     },
     "maarten": {
         "nl": "Maarten — rustige Nederlandse mannenstem. Betrouwbaar en geduldig.",
@@ -43,11 +55,15 @@ _PERSONA_STYLE: dict[str, dict[AppLang, str]] = {
     "peter": {
         "nl": (
             "Peter — warme, diepe mannenstem van een volwassen man rond zestig. "
-            "Lage bariton, rustig en gelijkwaardig. Geen lichte of hoge stem."
+            "Lage bariton, rustig en gelijkwaardig — dezelfde zware, warme klank als "
+            "in zijn welkomstvideo. Geen lichte of hoge stem. Praat langzaam en "
+            "natuurlijk, met korte adempauzes."
         ),
         "en": (
             "Peter — warm, deep male voice of a mature man in his late fifties or "
-            "early sixties. Low baritone, calm and equal. Not light or high-pitched."
+            "early sixties. Low baritone, calm and equal — the same heavy, warm tone "
+            "as in his welcome video. Not light or high-pitched. Speak slowly and "
+            "naturally, with gentle pauses."
         ),
     },
 }
@@ -112,16 +128,33 @@ def _split_tts_chunks(text: str, max_chars: int = TTS_CHUNK_CHARS) -> list[str]:
     return chunks or [cleaned[:max_chars]]
 
 
+def _persona_voice_style(persona_id: str) -> str:
+    """Extra style line from the persona catalog (e.g. Peter's `voice_style` field) —
+    mirrors getProductionVoiceStyle() feeding into getGeminiVoicePrompt() on the client.
+    """
+    try:
+        from app.services.personas.persona_loader import get_persona
+
+        return get_persona(persona_id).voice_style or ""
+    except Exception:  # pragma: no cover - persona catalog should always load
+        return ""
+
+
 def _tts_prompt(text: str, lang: AppLang, persona_id: str = "fenna") -> str:
-    style = _PERSONA_STYLE.get(persona_id, _PERSONA_STYLE["fenna"])[lang]
+    character = _PERSONA_STYLE.get(persona_id, _PERSONA_STYLE["fenna"])[lang]
+    voice_style = _persona_voice_style(persona_id)
+
     if lang == "en":
+        persona = f"{character} Style: {voice_style}." if voice_style else character
         return (
-            f"{style} Speak naturally. Complete every sentence fully with clear ending.\n\n"
-            f"{text}"
+            f"Read aloud in one natural flow ({persona}). Speak naturally and "
+            f"complete every sentence fully with a clear ending.\n\n{text}"
         )
+
+    persona = f"{character} Stijl: {voice_style}." if voice_style else character
     return (
-        f"{style} Praat natuurlijk. Maak elke zin volledig af met een duidelijk einde.\n\n"
-        f"{text}"
+        f"Lees hardop voor in één natuurlijke flow ({persona}). Praat natuurlijk en "
+        f"maak elke zin volledig af met een duidelijk einde.\n\n{text}"
     )
 
 

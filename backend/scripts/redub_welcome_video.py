@@ -41,7 +41,9 @@ USAGE
 -----
     export GEMINI_API_KEY=...   # required — same key the app uses
 
-    # Full pipeline: matching voice + matching lips, in one command:
+    # Full pipeline: matching voice + matching pace + matching lips, one command.
+    # (The same playbackRate slowdown live conversation always applies -- 0.86 for
+    # Peter -- is baked in automatically; pass --no-slow-down to skip it.)
     python backend/scripts/redub_welcome_video.py \\
         --persona peter \\
         --text "Ik ben Peter, wat fijn dat u er bent. Ik luister aandachtig naar u en u mag gewoon praten op uw eigen manier." \\
@@ -50,9 +52,8 @@ USAGE
         --video-out /tmp/peter_welcome_redubbed.mp4 \\
         --lipsync
 
-    # Quick voice-only check (no lip-sync, listen to /tmp/peter_dub.wav):
-    python backend/scripts/redub_welcome_video.py \\
-        --persona peter --text "..." --out /tmp/peter_dub --slow-down
+    # Quick voice-only check (no lip-sync, listen to /tmp/peter_dub_rate0.86.wav):
+    python backend/scripts/redub_welcome_video.py --persona peter --text "..." --out /tmp/peter_dub
 """
 
 from __future__ import annotations
@@ -148,10 +149,15 @@ def main() -> int:
     parser.add_argument("--lang", default="nl", choices=["nl", "en"])
     parser.add_argument("--out", required=True, help="Output path (without extension) for the reference audio.")
     parser.add_argument(
-        "--slow-down",
-        action="store_true",
-        help="Apply the same playbackRate slowdown used live (via ffmpeg atempo) for a closer comparison.",
+        "--no-slow-down",
+        dest="slow_down",
+        action="store_false",
+        help=(
+            "Skip the playbackRate slowdown live conversation always applies (e.g. 0.86 for "
+            "Peter). On by default, since live conversation is never played at native speed."
+        ),
     )
+    parser.set_defaults(slow_down=True)
     parser.add_argument(
         "--apply-to-video",
         help="Existing welcome.mp4 to redub, for an A/B preview or final asset (with --lipsync).",
