@@ -2,8 +2,11 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  getAntiInterrogationHint,
+  getNoRepeatQuestionHint,
   isExclusivityOrDependencyRequest,
   isToneOrRoleComparison,
+  lastReplyEndedWithQuestion,
   replyFailsDependencyBoundary,
   replyFailsLiveVoiceQuality,
 } from "./conversationLogic";
@@ -120,5 +123,38 @@ describe("dependency safety hints", () => {
       ),
       false,
     );
+  });
+});
+
+describe("Q&A-Q&A-Q&A rhythm guard", () => {
+  it("bans generic filler closers in the anti-interrogation hint", () => {
+    const hint = getAntiInterrogationHint("nl");
+    assert.match(hint, /Waar wilt u het over hebben/);
+    assert.match(hint, /Vertel eens meer/);
+  });
+
+  it("detects a question at the end of the last assistant turn", () => {
+    assert.equal(
+      lastReplyEndedWithQuestion([
+        { role: "user", content: "Hallo." },
+        { role: "assistant", content: "Hallo, fijn dat u er bent. Hoe was uw dag?" },
+      ]),
+      true,
+    );
+    assert.equal(
+      lastReplyEndedWithQuestion([
+        { role: "user", content: "Hallo." },
+        { role: "assistant", content: "Hallo, fijn dat u er bent. Hoe was uw dag?" },
+        { role: "user", content: "Heel rustig." },
+        { role: "assistant", content: "Dat klinkt fijn, rustig is een mooi begin." },
+      ]),
+      false,
+    );
+    assert.equal(lastReplyEndedWithQuestion([]), false);
+  });
+
+  it("provides a hint telling the model to skip the question this turn", () => {
+    assert.match(getNoRepeatQuestionHint("nl"), /GEEN HERHAALDE VRAAG/);
+    assert.match(getNoRepeatQuestionHint("en"), /NO REPEAT QUESTION/i);
   });
 });

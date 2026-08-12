@@ -107,6 +107,7 @@ export function getAntiInterrogationHint(lang: AppLang): string {
       "Bad: user asks 'How are you?' → you: 'Fine — what would you like to talk about?'",
       "Good: user asks 'How are you?' → you: 'I'm doing well, thank you. It's good to hear you.'",
       "At most ONE question in a reply, and skip the question entirely after greetings or when they asked YOU something.",
+      "Banned generic closers: 'What would you like to talk about?', 'Tell me more.', 'What do you think about that?'",
     ].join(" ");
   }
   return [
@@ -114,7 +115,35 @@ export function getAntiInterrogationHint(lang: AppLang): string {
     "Slecht: gebruiker vraagt 'Hoe gaat het?' → u: 'Goed — waar wilt u het over hebben?'",
     "Goed: gebruiker vraagt 'Hoe gaat het?' → u: 'Met mij gaat het goed, dank u. Fijn dat ik u hoor.'",
     "Maximaal ÉÉN vraag per antwoord — en laat de vraag weg na een groet of als zij u iets vroegen.",
+    "Verboden standaardzinnen: 'Waar wilt u het over hebben?', 'Vertel eens meer.', 'Wat vindt u daarvan?'",
   ].join(" ");
+}
+
+/** Q&A-Q&A-Q&A-ritme doorbreken: geen nieuwe vraag direct na een vorige vraag. */
+export function lastReplyEndedWithQuestion(
+  history: { role: "user" | "assistant"; content: string }[],
+): boolean {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    if (history[i]?.role === "assistant") {
+      return history[i].content.includes("?");
+    }
+  }
+  return false;
+}
+
+export function getNoRepeatQuestionHint(lang: AppLang): string {
+  if (lang === "en") {
+    return (
+      "NO REPEAT QUESTION: Your previous reply already ended with a question. " +
+      "Do not ask another one now — react to what the user said, share a thought, or add to the topic instead. " +
+      "Skipping a question this turn is normal and good."
+    );
+  }
+  return (
+    "GEEN HERHAALDE VRAAG: Uw vorige antwoord eindigde al met een vraag. " +
+    "Stel nu geen nieuwe — reageer op wat de gebruiker zei, deel een gedachte, of vul het onderwerp aan. " +
+    "Deze beurt geen vraag stellen is normaal en goed."
+  );
 }
 
 export function getVoiceLiveHint(lang: AppLang): string {

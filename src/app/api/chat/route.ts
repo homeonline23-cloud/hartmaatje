@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCompanionSystemPrompt, getExtraTurnHints } from "@/lib/chatPrompts";
+import {
+  getNoRepeatQuestionHint,
+  lastReplyEndedWithQuestion,
+} from "@/lib/companion/conversationLogic";
 import { guestReply } from "@/lib/guestChat";
 import type { AppLang } from "@/lib/languages";
 import { isAppLang } from "@/lib/languages";
@@ -92,6 +96,9 @@ export async function POST(req: NextRequest) {
   );
 
   const extraHints = getExtraTurnHints(message, lang, identityId);
+  if (lastReplyEndedWithQuestion(history)) {
+    extraHints.push(getNoRepeatQuestionHint(lang));
+  }
   const fullPrompt =
     extraHints.length > 0
       ? [systemPrompt, ...extraHints].join("\n\n")
