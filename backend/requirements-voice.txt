@@ -1,0 +1,16 @@
+# Optional — only needed for the voice-changer feature (custom cloned voices
+# via RVC, e.g. trained locally with Applio). Not required for the core app;
+# without these, uploaded voice models are stored but conversion is skipped
+# and companions keep using the default Gemini TTS voice.
+#
+# Install with:
+#   pip install -r requirements.txt -r requirements-voice.txt
+#
+# CPU inference works but is slow (multiple seconds per reply). For real-time
+# use in production, run this on a machine with an NVIDIA GPU and install the
+# matching CUDA build of torch instead of the CPU wheel below.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.2.0
+torchaudio>=2.2.0
+rvc-python>=0.1.5
