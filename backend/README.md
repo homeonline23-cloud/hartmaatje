@@ -82,8 +82,11 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | POST | `/session/end` | User ends session |
 | POST | `/chat/message` | Send text → companion reply + safety + memory |
 | POST | `/speech/transcribe` | Audio → text (Gemini STT) |
-| POST | `/speech/speak` | Text → neural voice |
+| POST | `/speech/speak` | Text → neural voice (custom cloned voice if one is uploaded for that persona) |
 | POST | `/alerts/emergency` | Staff webhook (emergency/distress) |
+| GET | `/voice-models` | List custom cloned-voice status per persona |
+| POST | `/voice-models/{persona_id}` | Upload a `.pth` (+ optional `.index`) RVC model — requires `X-Admin-Key` |
+| DELETE | `/voice-models/{persona_id}` | Remove a persona's custom voice — requires `X-Admin-Key` |
 
 ## Project layout
 
@@ -107,6 +110,7 @@ backend/
       tools/              # web search, tool router
       quality/            # post-LLM validation
       observability/      # structured logging, metrics
+      voice/              # voice-model registry + optional RVC conversion
     repositories/         # memory_repository (JSON)
     prompts/              # YAML reference (single copy in services/prompts/)
   tests/
@@ -114,9 +118,26 @@ backend/
     integration/
   data/personas/            # catalog.json + per-persona JSON
   data/care_notes/          # optional staff notes per resident
+  data/voice_models/        # uploaded .pth/.index custom voices (gitignored)
   requirements.txt
+  requirements-voice.txt    # optional — RVC conversion (torch, rvc-python)
   .env.example
 ```
+
+## Voice-changer — custom cloned voices
+
+Companions can speak with a custom cloned voice (e.g. trained locally with
+[Applio](https://github.com/IAHispano/Applio)) instead of the default Gemini
+TTS voice:
+
+1. Set `ADMIN_API_KEY` in `backend/.env` to enable the endpoints.
+2. Upload the trained `.pth` (and optional `.index`) file per persona from the
+   frontend's `/voice-changer` page, or directly:
+   `curl -X POST http://localhost:8000/voice-models/peter -H "X-Admin-Key: ..." -F model_file=@peter.pth`.
+3. Install `pip install -r requirements-voice.txt` to actually run the RVC
+   conversion (CPU works but is slow; a GPU is recommended for production).
+   Without it, uploads are stored but `/speech/speak` and voice-turn replies
+   silently keep using the default Gemini voice.
 
 ## Tests
 
