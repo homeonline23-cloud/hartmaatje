@@ -19,6 +19,7 @@ from app.schemas.session import (
     SessionStartRequest,
     SessionStartResponse,
 )
+from app.schemas.voice import VoiceModelListResponse, VoiceModelStatus
 
 __all__ = [
     "AlertType",
@@ -37,6 +38,8 @@ __all__ = [
     "SpeakResponse",
     "TranscribeRequest",
     "TranscribeResponse",
+    "VoiceModelListResponse",
+    "VoiceModelStatus",
     "VoiceTurnRequest",
     "VoiceTurnResponse",
 ]

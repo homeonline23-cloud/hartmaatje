@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.logging import setup_logging
-from app.api.routers import admin, alerts, chat, health, personas, session
+from app.api.routers import admin, alerts, chat, health, personas, session, voice_models
 from app.api.v1.router import api_v1_router
 
 setup_logging()
@@ -31,6 +31,7 @@ app.include_router(chat.router)
 app.include_router(alerts.router)
 app.include_router(personas.router)
 app.include_router(admin.router)
+app.include_router(voice_models.router)
 app.include_router(api_v1_router)
 
 

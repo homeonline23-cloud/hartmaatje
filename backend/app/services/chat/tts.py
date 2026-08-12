@@ -1,6 +1,9 @@
 """
-Text-to-speech — Fenna's single consistent voice (nl / en).
+Text-to-speech — one consistent Gemini voice per persona (nl / en).
 Parallel chunk synthesis; retries failed chunks; stable audio concat.
+
+Voice names and persona style text mirror src/lib/voice/geminiVoiceConfig.ts so a
+character sounds the same whether the client or this backend synthesizes the audio.
 """
 
 from __future__ import annotations
@@ -15,12 +18,56 @@ import httpx
 
 from app.core.config import get_settings
 from app.core.lang import normalize_lang
+from app.services.voice import rvc_engine
 
 logger = logging.getLogger(__name__)
 AppLang = Literal["nl", "en"]
 
 TTS_CHUNK_CHARS = 220
 TTS_MAX_RETRIES = 1
+
+# Persona voice/style description used in the TTS prompt — copied word-for-word from
+# PROFILES[*].personaNl / personaEn in src/lib/voice/geminiVoiceConfig.ts. Keep these
+# in sync manually: any drift here means the backend (safety replies, /speech/speak,
+# and welcome-video redubs) and the client (/api/companion-speak, normal live turns)
+# would ask Gemini TTS for subtly different deliveries even though the voice NAME is
+# the same — which is exactly the kind of "close but not quite" mismatch this whole
+# persona-voice fix is meant to eliminate.
+_PERSONA_STYLE: dict[str, dict[AppLang, str]] = {
+    "fenna": {
+        "nl": (
+            "Fenna — rustige Nederlandse vrouwenstem, 60-plus. Praat natuurlijk en "
+            "gelijkwaardig, alsof u met een bekende aan tafel zit — niet zoet of "
+            "bewonderend voorlezen. Rustig tempo, levendige intonatie, korte adempauzes."
+        ),
+        "en": (
+            "Fenna — calm female voice. Natural, equal conversation — not sugary or "
+            "gushing. Calm pace with gentle pauses."
+        ),
+    },
+    "colette": {
+        "nl": "Warme, heldere Nederlandse vrouwenstem — volwassen vrouw, rustig en duidelijk.",
+        "en": "Warm, clear adult female voice — calm and reassuring.",
+    },
+    "maarten": {
+        "nl": "Maarten — rustige Nederlandse mannenstem. Betrouwbaar en geduldig.",
+        "en": "Maarten — calm male voice. Trustworthy and patient.",
+    },
+    "peter": {
+        "nl": (
+            "Peter — warme, diepe mannenstem van een volwassen man rond zestig. "
+            "Lage bariton, rustig en gelijkwaardig — dezelfde zware, warme klank als "
+            "in zijn welkomstvideo. Geen lichte of hoge stem. Praat langzaam en "
+            "natuurlijk, met korte adempauzes."
+        ),
+        "en": (
+            "Peter — warm, deep male voice of a mature man in his late fifties or "
+            "early sixties. Low baritone, calm and equal — the same heavy, warm tone "
+            "as in his welcome video. Not light or high-pitched. Speak slowly and "
+            "naturally, with gentle pauses."
+        ),
+    },
+}
 
 
 class TtsQuotaError(Exception):
@@ -82,21 +129,39 @@ def _split_tts_chunks(text: str, max_chars: int = TTS_CHUNK_CHARS) -> list[str]:
     return chunks or [cleaned[:max_chars]]
 
 
-def _tts_prompt(text: str, lang: AppLang) -> str:
+def _persona_voice_style(persona_id: str) -> str:
+    """Extra style line from the persona catalog (e.g. Peter's `voice_style` field) —
+    mirrors getProductionVoiceStyle() feeding into getGeminiVoicePrompt() on the client.
+    """
+    try:
+        from app.services.personas.persona_loader import get_persona
+
+        return get_persona(persona_id).voice_style or ""
+    except Exception:  # pragma: no cover - persona catalog should always load
+        return ""
+
+
+def _tts_prompt(text: str, lang: AppLang, persona_id: str = "fenna") -> str:
+    character = _PERSONA_STYLE.get(persona_id, _PERSONA_STYLE["fenna"])[lang]
+    voice_style = _persona_voice_style(persona_id)
+
     if lang == "en":
+        persona = f"{character} Style: {voice_style}." if voice_style else character
         return (
-            "Fenna — warm, clear English female voice for older adults. "
-            "Speak naturally. Complete every sentence fully with clear ending.\n\n"
-            f"{text}"
+            f"Read aloud in one natural flow ({persona}). Speak naturally and "
+            f"complete every sentence fully with a clear ending.\n\n{text}"
         )
+
+    persona = f"{character} Stijl: {voice_style}." if voice_style else character
     return (
-        "Fenna — warme, duidelijke Nederlandse vrouwenstem voor ouderen. "
-        "Praat natuurlijk. Maak elke zin volledig af met een duidelijk einde.\n\n"
-        f"{text}"
+        f"Lees hardop voor in één natuurlijke flow ({persona}). Praat natuurlijk en "
+        f"maak elke zin volledig af met een duidelijk einde.\n\n{text}"
     )
 
 
-async def _synthesize_chunk_once(text: str, lang: AppLang) -> Optional[tuple[bytes, str]]:
+async def _synthesize_chunk_once(
+    text: str, lang: AppLang, persona_id: str = "fenna"
+) -> Optional[tuple[bytes, str]]:
     settings = get_settings()
     if not settings.gemini_api_key or not text.strip():
         return None
@@ -106,12 +171,16 @@ async def _synthesize_chunk_once(text: str, lang: AppLang) -> Optional[tuple[byt
         f"{settings.gemini_tts_model}:generateContent?key={settings.gemini_api_key}"
     )
     body = {
-        "contents": [{"role": "user", "parts": [{"text": _tts_prompt(text, lang)}]}],
+        "contents": [
+            {"role": "user", "parts": [{"text": _tts_prompt(text, lang, persona_id)}]}
+        ],
         "generationConfig": {
             "responseModalities": ["AUDIO"],
             "speechConfig": {
                 "voiceConfig": {
-                    "prebuiltVoiceConfig": {"voiceName": settings.fenna_voice_name}
+                    "prebuiltVoiceConfig": {
+                        "voiceName": settings.voice_name_for(persona_id)
+                    }
                 }
             },
         },
@@ -135,10 +204,12 @@ async def _synthesize_chunk_once(text: str, lang: AppLang) -> Optional[tuple[byt
     return None
 
 
-async def _synthesize_chunk(text: str, lang: AppLang) -> Optional[tuple[bytes, str]]:
+async def _synthesize_chunk(
+    text: str, lang: AppLang, persona_id: str = "fenna"
+) -> Optional[tuple[bytes, str]]:
     for attempt in range(TTS_MAX_RETRIES + 1):
         try:
-            result = await _synthesize_chunk_once(text, lang)
+            result = await _synthesize_chunk_once(text, lang, persona_id)
             if result:
                 return result
         except TtsQuotaError:
@@ -214,18 +285,49 @@ def concat_audio_blobs(blobs: list[tuple[str, str]]) -> tuple[str, str]:
     return _raw_parts_to_b64(raw_parts)
 
 
+async def _apply_custom_voice(audio_b64: str, mime: str, persona_id: str) -> Optional[tuple[str, str]]:
+    """Best-effort RVC conversion of the base TTS audio into `persona_id`'s
+    cloned voice, if one has been uploaded (see `/voice-models`). Only WAV
+    audio is supported for conversion; returns None to keep the original
+    audio when conversion isn't applicable, unavailable, or fails."""
+    if mime != "audio/wav":
+        return None
+    try:
+        wav_bytes = base64.b64decode(audio_b64)
+        converted = await rvc_engine.convert_voice(wav_bytes, persona_id)
+    except Exception as exc:
+        logger.warning("Custom voice conversion skipped for %s: %s", persona_id, exc)
+        return None
+    if not converted:
+        return None
+    return base64.b64encode(converted).decode("ascii"), "audio/wav"
+
+
 async def synthesize_fenna_speech(
     text: str,
     lang: AppLang = "nl",
+    persona_id: str = "fenna",
 ) -> Optional[tuple[str, str]]:
-    """Returns (audio_base64, mime_type) or None."""
+    """Returns (audio_base64, mime_type) or None.
+
+    ``persona_id`` selects the Gemini prebuilt voice (fenna/colette -> Aoede,
+    maarten -> Charon, peter -> Algenib) so server-synthesized replies (e.g. the
+    safety/emergency path) use the same voice as that character's live client-side
+    speech instead of always defaulting to Fenna's voice.
+
+    If `persona_id` also has a custom cloned voice uploaded via `/voice-models`
+    (see `app.services.voice.rvc_engine`), the Gemini-synthesized audio above is
+    additionally converted to that cloned voice before returning — e.g. to make
+    a character sound exactly like a specific recorded voice (such as the actual
+    narrator in their welcome video) instead of the closest built-in Gemini voice.
+    """
     lang = normalize_lang(lang)
     chunks = _split_tts_chunks(text)
     if not chunks:
         return None
 
     results = await asyncio.gather(
-        *[_synthesize_chunk(chunk, lang) for chunk in chunks],
+        *[_synthesize_chunk(chunk, lang, persona_id) for chunk in chunks],
         return_exceptions=True,
     )
 
@@ -235,14 +337,14 @@ async def synthesize_fenna_speech(
             raise result
         if isinstance(result, Exception):
             logger.error("TTS chunk %s exception: %s", i, result)
-            retry = await _synthesize_chunk(chunks[i], lang)
+            retry = await _synthesize_chunk(chunks[i], lang, persona_id)
             if retry:
                 parts.append(retry)
             continue
         if result:
             parts.append(result)
         else:
-            retry = await _synthesize_chunk(chunks[i], lang)
+            retry = await _synthesize_chunk(chunks[i], lang, persona_id)
             if retry:
                 parts.append(retry)
             else:
@@ -257,7 +359,14 @@ async def synthesize_fenna_speech(
         )
 
     try:
-        return _raw_parts_to_b64(parts)
+        audio_b64, mime = _raw_parts_to_b64(parts)
     except Exception as exc:
         logger.error("Audio concat failed: %s", exc)
         return None
+
+    if persona_id:
+        converted = await _apply_custom_voice(audio_b64, mime, persona_id)
+        if converted:
+            return converted
+
+    return audio_b64, mime
