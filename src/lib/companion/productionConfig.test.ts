@@ -30,7 +30,7 @@ describe("productionConfig v2.1", () => {
       assert.equal(c.response_style_rules.length, 16);
       assert.equal(c.memory_rules.length, 8);
       assert.equal(c.safety_rules.length, 8);
-      assert.equal(c.forbidden_behaviors.length, 7);
+      assert.equal(c.forbidden_behaviors.length, 8);
     }
   });
 

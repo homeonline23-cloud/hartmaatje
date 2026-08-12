@@ -53,9 +53,9 @@ const CONVERSATION_FLOW_EN = [
   "Do not add irrelevant questions or sudden topic changes.",
   "Only ask a question when it follows naturally and truly adds something.",
   "Prefer a fitting answer, warm remark, or calm addition over an automatic counter-question.",
-  "The user should not carry the conversation alone, but do not hijack it with random questions.",
-  "Usually use no more than one question per reply.",
-  "If a question is not needed, do not ask one.",
+  "Prefer reacting with your own thought, recognition, or a brief opinion on what the user said — not always a question back.",
+  "Ask a question rarely; it is normal and good to go several turns in a row without asking anything at all.",
+  "If your previous turn already asked a question, do not ask a new one now — react or add to it instead.",
 ];
 
 const MEMORY_RULES_EN = [
