@@ -24,6 +24,7 @@ def decide_dialogue(
     lang: AppLang = "nl",
     voice_mode: bool = False,
     user_text: str = "",
+    recent_assistant_asked_question: bool = False,
 ) -> DialogueDecision:
     """
     Decide what should happen next:
@@ -32,6 +33,12 @@ def decide_dialogue(
     - tool needed
     - follow-up allowed
     - reply style: short/warm, practical, or supportive
+
+    ``recent_assistant_asked_question`` marks that the previous reply already
+    ended with a question. This is the main lever against a mechanical
+    Q&A-Q&A-Q&A rhythm: a real conversation does not ask something every
+    single turn, so the default path suppresses another question right after
+    one was just asked.
     """
     _ = lang
     intent_id = intent.id
@@ -98,12 +105,13 @@ def decide_dialogue(
         )
 
     is_greeting = _is_short_greeting(user_text)
+    suppress_question = is_greeting or recent_assistant_asked_question
     return DialogueDecision(
         use_memory=has_memory and not is_greeting,
         tone_mode="warm_soft" if is_greeting or voice_mode else _tone_from_nlu(nlu),
-        follow_up_allowed=not is_greeting
+        follow_up_allowed=not suppress_question
         and nlu.detected_tone.primary not in ("sadness", "confusion", "stress"),
-        max_questions=0 if is_greeting else 1,
+        max_questions=0 if suppress_question else 1,
         short_warm_reply=is_greeting
         or voice_mode
         or nlu.detected_tone.primary in ("sadness", "stress"),

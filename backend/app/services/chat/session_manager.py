@@ -40,6 +40,18 @@ class Session:
     def recent_turns(self, limit: int = 16) -> List[ChatTurn]:
         return self.turns[-limit:]
 
+    def last_assistant_asked_question(self) -> bool:
+        """Did the most recent assistant reply already end a turn with a question?
+
+        Used to stop back-to-back Q&A-Q&A-Q&A rhythm: if the previous reply asked
+        something, this turn should default to reacting/continuing instead of
+        asking again.
+        """
+        for turn in reversed(self.turns):
+            if turn.role == "assistant":
+                return "?" in turn.content
+        return False
+
     def update_summary(self, user_text: str, assistant_text: str) -> None:
         """Rolling short summary + active topic thread."""
         snippet = user_text.strip()[:120]

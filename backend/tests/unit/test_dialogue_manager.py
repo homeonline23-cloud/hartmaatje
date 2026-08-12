@@ -42,6 +42,40 @@ def test_emotional_support_plan() -> None:
     assert plan.max_questions == 0
 
 
+def test_normal_conversation_allows_one_question_by_default() -> None:
+    text = "Wat een mooie dag is het vandaag."
+    nlu = analyze_text(text, "nl")
+    guard = analyze_user_message(text)
+    intent = classify_intent(text, nlu, guard, "nl")
+    memory_ctx = MemoryContext(prompt_block="", updated=False, known_name=None)
+    decision = decide_dialogue(
+        intent=intent, nlu=nlu, memory_ctx=memory_ctx, guard=guard, lang="nl", user_text=text
+    )
+    assert decision.max_questions == 1
+    assert decision.follow_up_allowed is True
+
+
+def test_recent_question_suppresses_follow_up() -> None:
+    """Do not ask again right after the previous reply already asked something —
+    this is what stops the Q&A-Q&A-Q&A ping-pong rhythm."""
+    text = "Wat een mooie dag is het vandaag."
+    nlu = analyze_text(text, "nl")
+    guard = analyze_user_message(text)
+    intent = classify_intent(text, nlu, guard, "nl")
+    memory_ctx = MemoryContext(prompt_block="", updated=False, known_name=None)
+    decision = decide_dialogue(
+        intent=intent,
+        nlu=nlu,
+        memory_ctx=memory_ctx,
+        guard=guard,
+        lang="nl",
+        user_text=text,
+        recent_assistant_asked_question=True,
+    )
+    assert decision.max_questions == 0
+    assert decision.follow_up_allowed is False
+
+
 def test_research_candidate_sets_tool_action() -> None:
     text = "Kun je opzoeken wat het nieuws vandaag is?"
     nlu = analyze_text(text, "nl")

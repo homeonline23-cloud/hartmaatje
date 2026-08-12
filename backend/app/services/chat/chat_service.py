@@ -139,6 +139,7 @@ class ChatOrchestrator:
             lang=lang,
             voice_mode=voice_mode,
             user_text=user_text,
+            recent_assistant_asked_question=session.last_assistant_asked_question(),
         )
 
         # 5. Response plan
