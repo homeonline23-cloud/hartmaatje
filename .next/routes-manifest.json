@@ -1,0 +1,257 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/:path*",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "microphone=(self), camera=(), geolocation=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; frame-src 'self' https://www.youtube-nocookie.com https://youtube-nocookie.com https://*.youtube-nocookie.com https://www.youtube.com https://youtube.com; media-src 'self' blob: https://www.youtube-nocookie.com https://youtube-nocookie.com https://*.youtube-nocookie.com https://www.youtube.com https://*.googlevideo.com; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https: wss: ws: http://127.0.0.1:8000 http://localhost:8000 http://127.0.0.1:9000 http://localhost:9000; font-src 'self' data:"
+        }
+      ],
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    }
+  ],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/avatar/video/[name]",
+      "regex": "^/api/avatar/video/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPname": "nxtPname"
+      },
+      "namedRegex": "^/api/avatar/video/(?<nxtPname>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/dubber/jobs/[id]",
+      "regex": "^/api/dubber/jobs/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/dubber/jobs/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/dubber/jobs/[id]/download",
+      "regex": "^/api/dubber/jobs/([^/]+?)/download(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/dubber/jobs/(?<nxtPid>[^/]+?)/download(?:/)?$"
+    },
+    {
+      "page": "/api/dubber/jobs/[id]/install-story",
+      "regex": "^/api/dubber/jobs/([^/]+?)/install\\-story(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/dubber/jobs/(?<nxtPid>[^/]+?)/install\\-story(?:/)?$"
+    },
+    {
+      "page": "/gesprek/[id]",
+      "regex": "^/gesprek/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/gesprek/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/api/avatar/health",
+      "regex": "^/api/avatar/health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/avatar/health(?:/)?$"
+    },
+    {
+      "page": "/api/avatar/lipsync",
+      "regex": "^/api/avatar/lipsync(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/avatar/lipsync(?:/)?$"
+    },
+    {
+      "page": "/api/bioscoop/search",
+      "regex": "^/api/bioscoop/search(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/bioscoop/search(?:/)?$"
+    },
+    {
+      "page": "/api/chat",
+      "regex": "^/api/chat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/chat(?:/)?$"
+    },
+    {
+      "page": "/api/chat/stream",
+      "regex": "^/api/chat/stream(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/chat/stream(?:/)?$"
+    },
+    {
+      "page": "/api/dubber/health",
+      "regex": "^/api/dubber/health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dubber/health(?:/)?$"
+    },
+    {
+      "page": "/api/dubber/jobs",
+      "regex": "^/api/dubber/jobs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dubber/jobs(?:/)?$"
+    },
+    {
+      "page": "/api/ollama/health",
+      "regex": "^/api/ollama/health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ollama/health(?:/)?$"
+    },
+    {
+      "page": "/api/realtime",
+      "regex": "^/api/realtime(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/realtime(?:/)?$"
+    },
+    {
+      "page": "/bioscoop",
+      "regex": "^/bioscoop(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/bioscoop(?:/)?$"
+    },
+    {
+      "page": "/contact",
+      "regex": "^/contact(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/contact(?:/)?$"
+    },
+    {
+      "page": "/cookies",
+      "regex": "^/cookies(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cookies(?:/)?$"
+    },
+    {
+      "page": "/dubber",
+      "regex": "^/dubber(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dubber(?:/)?$"
+    },
+    {
+      "page": "/geheugen",
+      "regex": "^/geheugen(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/geheugen(?:/)?$"
+    },
+    {
+      "page": "/instellingen",
+      "regex": "^/instellingen(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/instellingen(?:/)?$"
+    },
+    {
+      "page": "/kiosk",
+      "regex": "^/kiosk(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/kiosk(?:/)?$"
+    },
+    {
+      "page": "/maatjes",
+      "regex": "^/maatjes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maatjes(?:/)?$"
+    },
+    {
+      "page": "/mic-test",
+      "regex": "^/mic\\-test(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/mic\\-test(?:/)?$"
+    },
+    {
+      "page": "/over",
+      "regex": "^/over(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/over(?:/)?$"
+    },
+    {
+      "page": "/peter-voice-previews",
+      "regex": "^/peter\\-voice\\-previews(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/peter\\-voice\\-previews(?:/)?$"
+    },
+    {
+      "page": "/prijzen",
+      "regex": "^/prijzen(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/prijzen(?:/)?$"
+    },
+    {
+      "page": "/privacy",
+      "regex": "^/privacy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/privacy(?:/)?$"
+    },
+    {
+      "page": "/verhalen",
+      "regex": "^/verhalen(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/verhalen(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

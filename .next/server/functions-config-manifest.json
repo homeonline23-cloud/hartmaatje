@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/avatar/health": {},
+    "/api/avatar/lipsync": {
+      "maxDuration": 600
+    },
+    "/api/avatar/video/[name]": {},
+    "/api/bioscoop/search": {},
+    "/api/chat": {},
+    "/api/chat/stream": {},
+    "/api/dubber/health": {},
+    "/api/dubber/jobs": {},
+    "/api/dubber/jobs/[id]": {},
+    "/api/dubber/jobs/[id]/download": {},
+    "/api/dubber/jobs/[id]/install-story": {},
+    "/api/ollama/health": {},
+    "/api/realtime": {}
+  }
+}

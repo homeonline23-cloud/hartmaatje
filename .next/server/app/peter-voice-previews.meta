@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/peter-voice-previews/layout,_N_T_/peter-voice-previews/page,_N_T_/peter-voice-previews"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/peter-voice-previews/__PAGE__",
+    "/peter-voice-previews",
+    "/_index",
+    "/_head"
+  ]
+}

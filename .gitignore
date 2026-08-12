@@ -1,0 +1,9 @@
+node_modules/
+public/
+services/
+dev/hartmaatje-voice/
+.env
+.env.local
+.env.production
+.env.production.local
+backend/.env

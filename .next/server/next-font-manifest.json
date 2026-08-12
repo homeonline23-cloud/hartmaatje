@@ -1,0 +1,77 @@
+{
+  "app": {
+    "[project]/src/app/_not-found/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/bioscoop/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/contact/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/cookies/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/dubber/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/geheugen/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/gesprek/[id]/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/instellingen/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/kiosk/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/maatjes/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/mic-test/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/over/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2",
+      "static/media/8bd76523131fa0fc-s.p.1pvupmngxrt5z.woff2",
+      "static/media/01e4147cff8141ee-s.p.3huc2loe0ie8a.woff2"
+    ],
+    "[project]/src/app/peter-voice-previews/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/prijzen/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/privacy/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ],
+    "[project]/src/app/verhalen/page": [
+      "static/media/47df9ba1c7236d3b-s.p.137759vg1sbmi.woff2",
+      "static/media/03bda585a99c6450-s.p.32sris142tqlb.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

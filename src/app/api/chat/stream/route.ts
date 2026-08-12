@@ -1,0 +1,9 @@
+import { POST as chatPost } from "../route";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/** Back-compat alias — same raw Ollama pipe as `/api/chat`. */
+export async function POST(req: Request) {
+  return chatPost(req);
+}

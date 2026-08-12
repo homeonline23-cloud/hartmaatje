@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/mic-test/layout,_N_T_/mic-test/page,_N_T_/mic-test"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/mic-test/__PAGE__",
+    "/mic-test",
+    "/_index",
+    "/_head"
+  ]
+}

@@ -1,0 +1,3 @@
+{
+  "/api/dubber/jobs/[id]/download/route": "app/api/dubber/jobs/[id]/download/route.js"
+}

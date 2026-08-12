@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+:root {
+  --hm-bg: #05381f;
+  --hm-bg-deep: #0a2a18;
+  --hm-cream: #faf6f0;
+  --hm-cream-border: #e8dfd0;
+  --hm-green: #3f6339; /* text on cream cards */
+  --hm-green-deep: #3f6339;
+  --hm-brown: #3f6339;
+  --hm-dark: #05381f; /* ONE chrome green: buttons, play, video corners */
+  --hm-white: #ffffff;
+}
+
+@theme inline {
+  --color-hm-bg: var(--hm-bg);
+  --color-hm-cream: var(--hm-cream);
+  --color-hm-green: var(--hm-green);
+  --color-hm-brown: var(--hm-brown);
+  --color-hm-dark: var(--hm-dark);
+  --font-sans: var(--font-source-sans), "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+}
+
+body {
+  background: var(--hm-bg);
+  color: var(--hm-green-deep);
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+@keyframes hm-arrow-nudge-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes hm-arrow-nudge-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+.hm-arrow-right {
+  display: inline-block;
+  animation: hm-arrow-nudge-right 1.1s ease-in-out infinite;
+}
+
+.hm-arrow-left {
+  display: inline-block;
+  animation: hm-arrow-nudge-left 1.1s ease-in-out infinite;
+}
+
+.hm-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(5, 56, 31, 0.55) 0%,
+    rgba(10, 42, 24, 0.72) 55%,
+    rgba(10, 42, 24, 0.88) 100%
+  );
+}
+
+.hm-card {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(248, 242, 232, 0.7);
+  background: rgba(250, 246, 240, 0.95);
+  box-shadow: 0 12px 32px rgba(44, 36, 22, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+/** Shared page column — header buttons + content card stay aligned. */
+.hm-shell {
+  width: 100%;
+  max-width: 40rem; /* same column on frontpage + all inner pages */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
+}
+
+/** Brand mark — same logo size on frontpage and every other page */
+.hm-brand-logo {
+  width: 7rem; /* 112px */
+  height: 7rem;
+  object-fit: contain;
+}
+
+@media (min-width: 640px) {
+  .hm-brand-logo {
+    width: 7.5rem;
+    height: 7.5rem;
+  }
+}
+
+.hm-btn {
+  display: inline-flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  padding: 0.85rem 1.25rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+
+.hm-btn:active {
+  transform: scale(0.98);
+}
+
+.hm-btn-primary {
+  background: #ffffff;
+  color: #3f6339;
+  box-shadow: 0 6px 14px rgba(255, 255, 255, 0.28);
+}
+
+.hm-btn-secondary {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.hm-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/** Solid dark green chrome — Start, play, video frames (one color site-wide) */
+.hm-dark {
+  background-color: var(--hm-dark);
+  color: #ffffff;
+}
+
+.hm-dark-frame {
+  background-color: var(--hm-dark);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -4px 14px rgba(0, 0, 0, 0.28),
+    0 8px 22px rgba(5, 56, 31, 0.42);
+}
