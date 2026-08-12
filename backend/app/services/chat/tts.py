@@ -18,6 +18,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.core.lang import normalize_lang
+from app.services.voice import rvc_engine
 
 logger = logging.getLogger(__name__)
 AppLang = Literal["nl", "en"]
@@ -284,6 +285,24 @@ def concat_audio_blobs(blobs: list[tuple[str, str]]) -> tuple[str, str]:
     return _raw_parts_to_b64(raw_parts)
 
 
+async def _apply_custom_voice(audio_b64: str, mime: str, persona_id: str) -> Optional[tuple[str, str]]:
+    """Best-effort RVC conversion of the base TTS audio into `persona_id`'s
+    cloned voice, if one has been uploaded (see `/voice-models`). Only WAV
+    audio is supported for conversion; returns None to keep the original
+    audio when conversion isn't applicable, unavailable, or fails."""
+    if mime != "audio/wav":
+        return None
+    try:
+        wav_bytes = base64.b64decode(audio_b64)
+        converted = await rvc_engine.convert_voice(wav_bytes, persona_id)
+    except Exception as exc:
+        logger.warning("Custom voice conversion skipped for %s: %s", persona_id, exc)
+        return None
+    if not converted:
+        return None
+    return base64.b64encode(converted).decode("ascii"), "audio/wav"
+
+
 async def synthesize_fenna_speech(
     text: str,
     lang: AppLang = "nl",
@@ -295,6 +314,12 @@ async def synthesize_fenna_speech(
     maarten -> Charon, peter -> Algenib) so server-synthesized replies (e.g. the
     safety/emergency path) use the same voice as that character's live client-side
     speech instead of always defaulting to Fenna's voice.
+
+    If `persona_id` also has a custom cloned voice uploaded via `/voice-models`
+    (see `app.services.voice.rvc_engine`), the Gemini-synthesized audio above is
+    additionally converted to that cloned voice before returning — e.g. to make
+    a character sound exactly like a specific recorded voice (such as the actual
+    narrator in their welcome video) instead of the closest built-in Gemini voice.
     """
     lang = normalize_lang(lang)
     chunks = _split_tts_chunks(text)
@@ -334,7 +359,14 @@ async def synthesize_fenna_speech(
         )
 
     try:
-        return _raw_parts_to_b64(parts)
+        audio_b64, mime = _raw_parts_to_b64(parts)
     except Exception as exc:
         logger.error("Audio concat failed: %s", exc)
         return None
+
+    if persona_id:
+        converted = await _apply_custom_voice(audio_b64, mime, persona_id)
+        if converted:
+            return converted
+
+    return audio_b64, mime
