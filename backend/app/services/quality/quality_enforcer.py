@@ -15,6 +15,21 @@ AppLang = Literal["nl", "en"]
 _MAX_WORDS_SHORT = 45
 _MAX_WORDS_NORMAL = 120
 
+# Generic closing questions that make a conversation feel like a call-center
+# script ("Q&A___Q&A___Q&A") instead of two people talking. These are stripped
+# unconditionally, regardless of max_questions, because they never add anything.
+_GENERIC_FILLER_QUESTIONS = (
+    "waar wilt u het over hebben",
+    "wat wilt u nog meer weten",
+    "vertel eens meer",
+    "wat vindt u daarvan",
+    "is er nog iets anders",
+    "what would you like to talk about",
+    "tell me more",
+    "what do you think about that",
+    "anything else on your mind",
+)
+
 
 def append_quality_block(prompt: str, plan: ResponsePlan, lang: AppLang) -> str:
     """Add conversation-quality rules to the system prompt."""
@@ -63,6 +78,10 @@ def validate_reply(
 
     if _looks_like_interview(reply, plan):
         violations.append("irrelevant_follow_up")
+
+    if _uses_generic_filler_question(text):
+        violations.append("generic_filler_question")
+        text = _strip_generic_filler_sentences(text)
 
     if _off_topic_drift(text, nlu):
         violations.append("off_topic_drift")
@@ -115,6 +134,12 @@ def build_quality_retry_hint(violations: list[str], lang: AppLang) -> str:
             "RETRY: Warmer, more human tone.",
             "RETRY: Warmere, menselijkere toon.",
         ),
+        "generic_filler_question": (
+            "RETRY: No generic filler question ('what would you like to talk about?'). "
+            "React to what they just said instead.",
+            "RETRY: Geen standaard afsluitvraag ('waar wilt u het over hebben?'). "
+            "Reageer in plaats daarvan op wat zij net zeiden.",
+        ),
     }
 
     for key, (en_msg, nl_msg) in mapping.items():
@@ -154,6 +179,21 @@ def _keep_first_question_only(text: str) -> str:
     if len(parts) == 2:
         return f"{parts[0]} {_strip_trailing_questions(parts[1])}".strip()
     return text
+
+
+def _uses_generic_filler_question(reply: str) -> bool:
+    lower = reply.lower()
+    return any(phrase in lower for phrase in _GENERIC_FILLER_QUESTIONS)
+
+
+def _strip_generic_filler_sentences(text: str) -> str:
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    kept = [
+        s
+        for s in sentences
+        if not any(phrase in s.lower() for phrase in _GENERIC_FILLER_QUESTIONS)
+    ]
+    return " ".join(kept).strip() if kept else text
 
 
 def _looks_like_interview(reply: str, plan: ResponsePlan) -> bool:

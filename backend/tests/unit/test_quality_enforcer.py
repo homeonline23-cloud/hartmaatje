@@ -31,3 +31,14 @@ def test_detects_interview_style() -> None:
     reply = "Vertel eens, hoe voelt u zich daarbij?"
     _, violations, _ = validate_reply(reply, plan, _persona(), NluResult(), "nl")
     assert "irrelevant_follow_up" in violations
+
+
+def test_strips_generic_filler_question_even_when_allowed() -> None:
+    """A generic call-center closer is always low-quality, even when a
+    question would otherwise be allowed this turn."""
+    plan = ResponsePlan(follow_up_allowed=True, max_questions=1)
+    reply = "Dat klinkt gezellig. Waar wilt u het over hebben?"
+    text, violations, _ = validate_reply(reply, plan, _persona(), NluResult(), "nl")
+    assert "generic_filler_question" in violations
+    assert "waar wilt u het over hebben" not in text.lower()
+    assert "Dat klinkt gezellig." in text
