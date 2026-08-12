@@ -175,3 +175,73 @@ export const hartmaatjeApi = {
       }),
     }),
 };
+
+/** Voice-changer — custom gekloonde stemmen (RVC) per personage. Admin-only. */
+export type VoicePersonaId = "fenna" | "maarten" | "peter" | "colette";
+
+export type VoiceModelStatus = {
+  persona_id: VoicePersonaId;
+  has_model: boolean;
+  has_index: boolean;
+  original_filename: string | null;
+  index_filename: string | null;
+  uploaded_at: string | null;
+};
+
+async function voiceModelRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      signal: controller.signal,
+    });
+    const data = (await res.json().catch(() => ({}))) as T & {
+      detail?: string;
+      error?: string;
+    };
+    if (!res.ok) {
+      throw new Error(String(data.detail ?? data.error ?? `Fout ${res.status}`));
+    }
+    return data;
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("Dit duurde te lang. Probeer het nog eens.");
+    }
+    if (err instanceof TypeError) {
+      throw new Error("Kan de HartMaatje-server nu niet bereiken.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export const voiceModelsApi = {
+  list: () => voiceModelRequest<{ models: VoiceModelStatus[] }>("/voice-models"),
+
+  upload: (
+    personaId: VoicePersonaId,
+    adminKey: string,
+    modelFile: File,
+    indexFile?: File | null,
+  ) => {
+    const form = new FormData();
+    form.append("model_file", modelFile);
+    if (indexFile) form.append("index_file", indexFile);
+    return voiceModelRequest<VoiceModelStatus>(`/voice-models/${personaId}`, {
+      method: "POST",
+      headers: { "X-Admin-Key": adminKey },
+      body: form,
+    });
+  },
+
+  remove: (personaId: VoicePersonaId, adminKey: string) =>
+    voiceModelRequest<VoiceModelStatus>(`/voice-models/${personaId}`, {
+      method: "DELETE",
+      headers: { "X-Admin-Key": adminKey },
+    }),
+};
