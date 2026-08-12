@@ -27,7 +27,21 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
     gemini_tts_model: str = "gemini-2.5-flash-preview-tts"
+
+    # Per-persona Gemini TTS prebuilt voice — must match src/lib/voice/geminiVoiceConfig.ts
+    # so a character sounds the same whether the client or the backend synthesizes audio.
     fenna_voice_name: str = "Aoede"
+    colette_voice_name: str = "Aoede"
+    maarten_voice_name: str = "Charon"
+    peter_voice_name: str = "Algenib"
+
+    def voice_name_for(self, persona_id: str) -> str:
+        return {
+            "fenna": self.fenna_voice_name,
+            "colette": self.colette_voice_name,
+            "maarten": self.maarten_voice_name,
+            "peter": self.peter_voice_name,
+        }.get(persona_id, self.fenna_voice_name)
 
     memory_data_path: str = "./data/memory"
     memory_backend: str = "json"  # json | sqlite | postgres

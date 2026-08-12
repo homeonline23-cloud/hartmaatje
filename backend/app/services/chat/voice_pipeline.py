@@ -147,7 +147,9 @@ async def process_voice_turn(
         session.update_summary(effective_user, reply)
         session.open_user_speech = ""
 
-        audio = await synthesize_fenna_speech(text_for_speech(reply, 4), lang)
+        audio = await synthesize_fenna_speech(
+            text_for_speech(reply, 4), lang, persona_id=session.character_id
+        )
         timer.mark("reply_tts")
         if not audio:
             raise ValueError("Spraak kon niet worden gemaakt.")

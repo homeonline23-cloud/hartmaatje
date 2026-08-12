@@ -1,6 +1,9 @@
 """
-Text-to-speech — Fenna's single consistent voice (nl / en).
+Text-to-speech — one consistent Gemini voice per persona (nl / en).
 Parallel chunk synthesis; retries failed chunks; stable audio concat.
+
+Voice names and persona style text mirror src/lib/voice/geminiVoiceConfig.ts so a
+character sounds the same whether the client or this backend synthesizes the audio.
 """
 
 from __future__ import annotations
@@ -21,6 +24,33 @@ AppLang = Literal["nl", "en"]
 
 TTS_CHUNK_CHARS = 220
 TTS_MAX_RETRIES = 1
+
+# Persona voice/style description used in the TTS prompt — mirrors the `personaNl`/
+# `personaEn` text in src/lib/voice/geminiVoiceConfig.ts for each character.
+_PERSONA_STYLE: dict[str, dict[AppLang, str]] = {
+    "fenna": {
+        "nl": "Fenna — warme, duidelijke Nederlandse vrouwenstem voor ouderen.",
+        "en": "Fenna — warm, clear English female voice for older adults.",
+    },
+    "colette": {
+        "nl": "Colette — warme, heldere Nederlandse vrouwenstem, rustig en duidelijk.",
+        "en": "Colette — warm, clear adult female voice — calm and reassuring.",
+    },
+    "maarten": {
+        "nl": "Maarten — rustige Nederlandse mannenstem. Betrouwbaar en geduldig.",
+        "en": "Maarten — calm male voice. Trustworthy and patient.",
+    },
+    "peter": {
+        "nl": (
+            "Peter — warme, diepe mannenstem van een volwassen man rond zestig. "
+            "Lage bariton, rustig en gelijkwaardig. Geen lichte of hoge stem."
+        ),
+        "en": (
+            "Peter — warm, deep male voice of a mature man in his late fifties or "
+            "early sixties. Low baritone, calm and equal. Not light or high-pitched."
+        ),
+    },
+}
 
 
 class TtsQuotaError(Exception):
@@ -82,21 +112,22 @@ def _split_tts_chunks(text: str, max_chars: int = TTS_CHUNK_CHARS) -> list[str]:
     return chunks or [cleaned[:max_chars]]
 
 
-def _tts_prompt(text: str, lang: AppLang) -> str:
+def _tts_prompt(text: str, lang: AppLang, persona_id: str = "fenna") -> str:
+    style = _PERSONA_STYLE.get(persona_id, _PERSONA_STYLE["fenna"])[lang]
     if lang == "en":
         return (
-            "Fenna — warm, clear English female voice for older adults. "
-            "Speak naturally. Complete every sentence fully with clear ending.\n\n"
+            f"{style} Speak naturally. Complete every sentence fully with clear ending.\n\n"
             f"{text}"
         )
     return (
-        "Fenna — warme, duidelijke Nederlandse vrouwenstem voor ouderen. "
-        "Praat natuurlijk. Maak elke zin volledig af met een duidelijk einde.\n\n"
+        f"{style} Praat natuurlijk. Maak elke zin volledig af met een duidelijk einde.\n\n"
         f"{text}"
     )
 
 
-async def _synthesize_chunk_once(text: str, lang: AppLang) -> Optional[tuple[bytes, str]]:
+async def _synthesize_chunk_once(
+    text: str, lang: AppLang, persona_id: str = "fenna"
+) -> Optional[tuple[bytes, str]]:
     settings = get_settings()
     if not settings.gemini_api_key or not text.strip():
         return None
@@ -106,12 +137,16 @@ async def _synthesize_chunk_once(text: str, lang: AppLang) -> Optional[tuple[byt
         f"{settings.gemini_tts_model}:generateContent?key={settings.gemini_api_key}"
     )
     body = {
-        "contents": [{"role": "user", "parts": [{"text": _tts_prompt(text, lang)}]}],
+        "contents": [
+            {"role": "user", "parts": [{"text": _tts_prompt(text, lang, persona_id)}]}
+        ],
         "generationConfig": {
             "responseModalities": ["AUDIO"],
             "speechConfig": {
                 "voiceConfig": {
-                    "prebuiltVoiceConfig": {"voiceName": settings.fenna_voice_name}
+                    "prebuiltVoiceConfig": {
+                        "voiceName": settings.voice_name_for(persona_id)
+                    }
                 }
             },
         },
@@ -135,10 +170,12 @@ async def _synthesize_chunk_once(text: str, lang: AppLang) -> Optional[tuple[byt
     return None
 
 
-async def _synthesize_chunk(text: str, lang: AppLang) -> Optional[tuple[bytes, str]]:
+async def _synthesize_chunk(
+    text: str, lang: AppLang, persona_id: str = "fenna"
+) -> Optional[tuple[bytes, str]]:
     for attempt in range(TTS_MAX_RETRIES + 1):
         try:
-            result = await _synthesize_chunk_once(text, lang)
+            result = await _synthesize_chunk_once(text, lang, persona_id)
             if result:
                 return result
         except TtsQuotaError:
@@ -217,15 +254,22 @@ def concat_audio_blobs(blobs: list[tuple[str, str]]) -> tuple[str, str]:
 async def synthesize_fenna_speech(
     text: str,
     lang: AppLang = "nl",
+    persona_id: str = "fenna",
 ) -> Optional[tuple[str, str]]:
-    """Returns (audio_base64, mime_type) or None."""
+    """Returns (audio_base64, mime_type) or None.
+
+    ``persona_id`` selects the Gemini prebuilt voice (fenna/colette -> Aoede,
+    maarten -> Charon, peter -> Algenib) so server-synthesized replies (e.g. the
+    safety/emergency path) use the same voice as that character's live client-side
+    speech instead of always defaulting to Fenna's voice.
+    """
     lang = normalize_lang(lang)
     chunks = _split_tts_chunks(text)
     if not chunks:
         return None
 
     results = await asyncio.gather(
-        *[_synthesize_chunk(chunk, lang) for chunk in chunks],
+        *[_synthesize_chunk(chunk, lang, persona_id) for chunk in chunks],
         return_exceptions=True,
     )
 
@@ -235,14 +279,14 @@ async def synthesize_fenna_speech(
             raise result
         if isinstance(result, Exception):
             logger.error("TTS chunk %s exception: %s", i, result)
-            retry = await _synthesize_chunk(chunks[i], lang)
+            retry = await _synthesize_chunk(chunks[i], lang, persona_id)
             if retry:
                 parts.append(retry)
             continue
         if result:
             parts.append(result)
         else:
-            retry = await _synthesize_chunk(chunks[i], lang)
+            retry = await _synthesize_chunk(chunks[i], lang, persona_id)
             if retry:
                 parts.append(retry)
             else:
