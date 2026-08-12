@@ -5,7 +5,7 @@ After=network.target hartmaatje-backend.service
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/hartmaatje/web
+WorkingDirectory=/opt/hartmaatje
 Environment=NODE_ENV=production
 Environment=PORT=3000
 ExecStart=/usr/bin/npm run start

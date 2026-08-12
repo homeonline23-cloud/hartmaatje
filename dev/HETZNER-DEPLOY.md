@@ -78,15 +78,17 @@ sudo chown $USER:$USER /opt/hartmaatje
 cd /opt/hartmaatje
 
 git clone https://github.com/homeonline23-cloud/hartmaatje.git .
-cd web
 ```
+
+De repocode staat direct in `/opt/hartmaatje` (geen aparte `web`-submap — `package.json`,
+`src/`, `backend/`, enz. staan meteen in deze map).
 
 ---
 
 ## 5. Backend configureren (FastAPI :8000)
 
 ```bash
-cd /opt/hartmaatje/web/backend
+cd /opt/hartmaatje/backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -130,7 +132,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 ## 6. Frontend configureren (Next.js :3000)
 
 ```bash
-cd /opt/hartmaatje/web
+cd /opt/hartmaatje
 npm install
 
 cp .env.local.example .env.local
@@ -169,8 +171,8 @@ npm run start
 Kopieer de service-bestanden uit `dev/systemd/` (of maak ze aan):
 
 ```bash
-sudo cp /opt/hartmaatje/web/dev/systemd/hartmaatje-backend.service /etc/systemd/system/
-sudo cp /opt/hartmaatje/web/dev/systemd/hartmaatje-frontend.service /etc/systemd/system/
+sudo cp /opt/hartmaatje/dev/systemd/hartmaatje-backend.service /etc/systemd/system/
+sudo cp /opt/hartmaatje/dev/systemd/hartmaatje-frontend.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable hartmaatje-backend hartmaatje-frontend
 sudo systemctl start hartmaatje-backend hartmaatje-frontend
@@ -189,7 +191,7 @@ journalctl -u hartmaatje-frontend -f
 ## 8. Caddy — HTTPS
 
 ```bash
-sudo cp /opt/hartmaatje/web/dev/Caddyfile.example /etc/caddy/Caddyfile
+sudo cp /opt/hartmaatje/dev/Caddyfile.example /etc/caddy/Caddyfile
 sudo nano /etc/caddy/Caddyfile   # jouwdomein.nl invullen
 sudo systemctl reload caddy
 ```
@@ -214,19 +216,35 @@ Zie ook: [docs/TEST-RUN-VOICE.md](../docs/TEST-RUN-VOICE.md)
 
 ## 10. Updates uitrollen
 
-Na `git pull` op de server:
+Na `git pull` op de server — run elke regel apart (niet als één plak-blok, dat kan
+in sommige terminals/consoles door elkaar lopen):
 
 ```bash
-cd /opt/hartmaatje/web
+cd /opt/hartmaatje
+git pull
+```
 
-# Backend
-cd backend && source .venv/bin/activate && pip install -r requirements.txt
+```bash
+cd /opt/hartmaatje/backend && source .venv/bin/activate
+```
+
+```bash
+pip install -r requirements.txt
+```
+
+```bash
 sudo systemctl restart hartmaatje-backend
+```
 
-# Frontend
-cd /opt/hartmaatje/web
-npm install
+```bash
+cd /opt/hartmaatje && npm install
+```
+
+```bash
 npm run build
+```
+
+```bash
 sudo systemctl restart hartmaatje-frontend
 ```
 
@@ -272,10 +290,11 @@ Gratis Gemini-quota raakt snel vol (429). Voor een echte pilot:
 | CORS error | `CORS_ORIGINS` in backend `.env` moet exact `https://jouwdomein.nl` zijn |
 | Microfoon werkt niet | Alleen via HTTPS + geldig certificaat |
 | Stem quota (429) | Gemini billing / nieuwe key — zie sectie 11 |
+| `No such file or directory: /opt/hartmaatje/web` | Oude versie van deze guide verwees naar een `web`-submap die niet meer bestaat. De code staat rechtstreeks in `/opt/hartmaatje` — gebruik dat pad, niet `/opt/hartmaatje/web`. |
 De verhaalvideo staat **niet** in git (~224 MB). Upload handmatig naar de server:
 
 ```bash
-scp "Hartmaatje met Einde.mp4" root@JOUW_IP:/opt/hartmaatje/web/public/videos/hartmaatje-verhaal.mp4
+scp "Hartmaatje met Einde.mp4" root@JOUW_IP:/opt/hartmaatje/public/videos/hartmaatje-verhaal.mp4
 ```
 
 Zie `public/videos/README.md`.
