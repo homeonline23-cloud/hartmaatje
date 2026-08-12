@@ -91,7 +91,7 @@ async def speech_speak(body: SpeakRequest) -> SpeakResponse:
         raise HTTPException(status_code=404, detail="Sessie niet actief.")
     lang = resolve_session_lang(session, body.lang)
     try:
-        audio = await synthesize_fenna_speech(body.text, lang)
+        audio = await synthesize_fenna_speech(body.text, lang, persona_id=session.character_id)
     except TtsQuotaError as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
     if not audio:
