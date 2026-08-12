@@ -8,14 +8,13 @@ const AVATAR_PORTRAIT_PATHS: Partial<Record<VoiceIdentityId, string>> = {
   colette: "/avatars/colette/portrait.png",
 };
 
-/**
- * Korte welkomstvideo — UITGESCHAKELD op verzoek: elk personage toont overal
- * alleen het stilstaande portret (geen doorlopende video-loop, geen losse
- * live-avatar-kosten). De mp4-bestanden blijven op schijf staan (en
- * `backend/scripts/redub_welcome_video.py` kan ze opnieuw genereren), maar
- * worden nergens meer aangeroepen zolang deze map leeg is.
- */
-const WELCOME_VIDEO_PATHS: Partial<Record<VoiceIdentityId, string>> = {};
+/** Korte welkomstvideo — opent in live-venster bij stemkeuze. */
+const WELCOME_VIDEO_PATHS: Partial<Record<VoiceIdentityId, string>> = {
+  maarten: "/avatars/maarten/welcome.mp4",
+  peter: "/avatars/peter/welcome.mp4",
+  fenna: "/avatars/fenna/welcome.mp4",
+  colette: "/avatars/colette/welcome.mp4",
+};
 
 /** Cache-bust na vervanging van een welkomstvideo. */
 const WELCOME_VIDEO_VERSIONS: Partial<Record<VoiceIdentityId, number>> = {
