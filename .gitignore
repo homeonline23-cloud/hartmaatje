@@ -51,6 +51,10 @@ next-env.d.ts
 backend/.venv/
 backend/__pycache__/
 backend/**/__pycache__/
+
+# one-time offline lip-sync dev tool (cloned + venv by setup_lipsync_tool.sh)
+backend/.lipsync-tool/
+backend/.lipsync-tool-venv/
 backend/data/memory/
 backend/data/**/*.db
 !backend/data/personas/
