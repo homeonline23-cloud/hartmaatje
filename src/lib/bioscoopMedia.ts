@@ -8,16 +8,16 @@ export type BioscoopCategoryId =
   | "animals"
   | "gardens";
 
-/** Temporary example images per destination — later replaced by live feed. */
+/** YouTube thumbnails — loaded directly from YouTube, no local files needed. */
 export const BIOSCOOP_CATEGORY_IMAGES: Record<BioscoopCategoryId, string> = {
-  nature: "/bioscoop/relaxing-music-therapy.png",
-  landscapes: "/bioscoop/deep-sea-ocean-creatures.png",
-  beaches: "/bioscoop/wonders-caribbean.png",
-  forests: "/bioscoop/amazon-jungle-birds.png",
-  mountains: "/bioscoop/wonders-planet-earth.png",
-  villages: "/bioscoop/rustige-dorpjes.png",
-  animals: "/bioscoop/wildlife-documentary.png",
-  gardens: "/bioscoop/bloeiende-tuinen.png",
+  nature:     "https://i.ytimg.com/vi/BHACKCNDMW8/hqdefault.jpg",
+  landscapes: "https://i.ytimg.com/vi/lBWZ9ls9-Oc/hqdefault.jpg",
+  beaches:    "https://i.ytimg.com/vi/6D9WECs9F_I/hqdefault.jpg",
+  forests:    "https://i.ytimg.com/vi/ocBKjNU-Kas/hqdefault.jpg",
+  mountains:  "https://i.ytimg.com/vi/hwXoiqThXks/hqdefault.jpg",
+  villages:   "https://i.ytimg.com/vi/glTaGSaRBR4/hqdefault.jpg",
+  animals:    "https://i.ytimg.com/vi/osdVLIXs820/hqdefault.jpg",
+  gardens:    "https://i.ytimg.com/vi/Rs3-OJBYKSY/hqdefault.jpg",
 };
 
 /** Optional in-window video (YouTube embed). */
