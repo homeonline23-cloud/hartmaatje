@@ -3,37 +3,47 @@ type HartmaatjeBrandTitleProps = {
   className?: string;
 };
 
-const gradientClass =
-  "bg-gradient-to-r from-[#7a1f2c] via-[#9a5518] via-50% to-[#153d66] bg-clip-text text-transparent";
+/**
+ * Merknaam zoals op de cover:
+ * Hart = warm oranje → rood, m = wit, aatje = ijsblauw → zachtblauw.
+ * Same size on frontpage and all other pages.
+ */
+const hartClass =
+  "bg-gradient-to-r from-[#ffb07a] via-[#f07848] to-[#e0452f] bg-clip-text text-transparent";
+const maatjeClass =
+  "bg-gradient-to-r from-[#eaf6ff] via-[#a8d0f0] to-[#5b9fd4] bg-clip-text text-transparent";
 
-/** Merknaam met regenboog-gradient — fijne witte rand rond de letters. */
+const sizeClass = "text-3xl sm:text-4xl";
+
 export function HartmaatjeBrandTitle({
-  variant = "header",
+  variant: _variant = "header",
   className = "",
 }: HartmaatjeBrandTitleProps) {
-  const isCover = variant === "cover";
-  const sizeClass = isCover
-    ? "text-[1.65rem] sm:text-[1.9rem]"
-    : "text-xl sm:text-2xl";
+  void _variant;
 
   return (
     <span
       className={`relative inline-block font-bold tracking-[0.05em] ${sizeClass} ${className}`}
+      style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.55))" }}
+      aria-label="Hartmaatje"
     >
       <span
         aria-hidden="true"
         className={`absolute inset-0 ${sizeClass} font-bold tracking-[0.05em] text-transparent`}
-        style={{ WebkitTextStroke: "0.85px rgba(255,255,255,0.78)" }}
+        style={{ WebkitTextStroke: "0.9px rgba(20, 55, 90, 0.35)" }}
       >
         Hartmaatje
       </span>
-      <span
-        className={`relative ${gradientClass} ${sizeClass} font-bold tracking-[0.05em]`}
-        style={{
-          filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.38))",
-        }}
-      >
-        Hartmaatje
+      <span className="relative" aria-hidden="true">
+        <span className={`${hartClass} ${sizeClass} font-bold tracking-[0.05em]`}>
+          Hart
+        </span>
+        <span className={`${sizeClass} font-bold tracking-[0.05em] text-white`}>
+          m
+        </span>
+        <span className={`${maatjeClass} ${sizeClass} font-bold tracking-[0.05em]`}>
+          aatje
+        </span>
       </span>
     </span>
   );
