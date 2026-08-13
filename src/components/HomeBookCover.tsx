@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import { Cormorant_Garamond } from "next/font/google";
+import { DigitalClock } from "@/components/DigitalClock";
+import { FrontpageIntroPlayer } from "@/components/FrontpageIntroPlayer";
 import { HartmaatjeBrandTitle } from "@/components/HartmaatjeBrandTitle";
-import { LogoRainbowHalo } from "@/components/LogoRainbowHalo";
-import { companionStartButtonClass } from "@/components/ui";
-import { hartmaatjeGreenOverlayClass } from "@/lib/hartmaatjeTheme";
-import { useLanguage } from "@/context/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useI18n } from "@/i18n/LanguageProvider";
 
 const coverFont = Cormorant_Garamond({
   subsets: ["latin"],
@@ -14,19 +14,26 @@ const coverFont = Cormorant_Garamond({
   style: ["italic", "normal"],
 });
 
+const startBtnClass =
+  "rounded-2xl hm-dark font-bold shadow-[0_8px_22px_rgba(5,56,31,0.42)] transition hover:brightness-[1.08] active:scale-[0.98]";
+
+const coverCtlH = "!min-h-[3.25rem] !py-2.5";
+
 type HomeBookCoverProps = {
   onOpen: () => void;
 };
 
-/** Boekkaft — alleen hier de cover-afbeelding; andere pagina's blijven effen groen. */
+/**
+ * Frontpage — intro video, then Start gesprek opens the talking companions.
+ */
 export function HomeBookCover({ onOpen }: HomeBookCoverProps) {
-  const { copy } = useLanguage();
+  const { t } = useI18n();
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       <Image
         src="/hartmaatje-cover.png"
-        alt="HartMaatje — regenboog aan zee"
+        alt={t.cover.coverAlt}
         fill
         priority
         unoptimized
@@ -35,7 +42,7 @@ export function HomeBookCover({ onOpen }: HomeBookCoverProps) {
       />
 
       <div
-        className={`pointer-events-none absolute inset-0 ${hartmaatjeGreenOverlayClass}`}
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#05381F]/22 via-transparent to-[#1B493C]/38"
         aria-hidden="true"
       />
 
@@ -44,41 +51,58 @@ export function HomeBookCover({ onOpen }: HomeBookCoverProps) {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex min-h-screen w-full flex-col px-6 pb-[5.75rem]">
-        <div className="pointer-events-none flex justify-center pt-[11%] sm:pt-[12%]">
+      <div className="relative z-10 flex min-h-screen w-full flex-col pb-20 pt-4 sm:pt-6">
+        <div className="hm-shell flex flex-col items-center">
           <div className="relative flex flex-col items-center">
-            <LogoRainbowHalo />
-            <Image
-              src="/hartmaatje-logo.png"
-              alt="HartMaatje logo"
-              width={136}
-              height={136}
-              unoptimized
-              className="relative z-10 h-[8.5rem] w-[8.5rem] object-contain drop-shadow-[0_4px_22px_rgba(0,0,0,0.5),0_0_30px_rgba(255,255,255,0.28)] sm:h-36 sm:w-36"
-              priority
-            />
-            <HartmaatjeBrandTitle variant="cover" className="relative z-10 mt-1" />
+            <div className="relative flex items-center justify-center">
+              <Image
+                src="/hartmaatje-logo.png"
+                alt="HartMaatje logo"
+                width={120}
+                height={120}
+                unoptimized
+                className="hm-brand-logo relative z-10 drop-shadow-[0_4px_18px_rgba(0,0,0,0.5),0_0_24px_rgba(255,255,255,0.22)]"
+                priority
+              />
+            </div>
+            <HartmaatjeBrandTitle variant="header" className="relative z-10 mt-1" />
+            <p className="relative z-10 mt-1 text-center text-base font-medium text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)] sm:text-lg">
+              {t.brand.tagline}
+            </p>
           </div>
-        </div>
 
-        <div className="min-h-[4.5rem] flex-1" aria-hidden="true" />
+          <div className="relative z-20 mt-5 w-full sm:mt-6">
+            <FrontpageIntroPlayer />
+          </div>
 
-        <div className="flex w-full flex-col items-center">
-          <p
-            className={`${coverFont.className} mb-12 max-w-xl text-center text-[1.65rem] font-normal italic leading-[1.5] tracking-[0.04em] text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.7)] sm:text-[2rem] sm:leading-[1.45]`}
-          >
-            {copy.welcomeLine1}
-            <br />
-            {copy.coverTaglineLine2}
-          </p>
+          <div className="relative z-20 mx-auto mt-4 flex w-full max-w-md flex-col items-center gap-1.5 sm:mt-5">
+            <button
+              type="button"
+              onClick={onOpen}
+              className={`inline-flex w-full items-center justify-center gap-3 ${coverCtlH} px-8 text-lg sm:text-xl ${startBtnClass}`}
+            >
+              <span className="hm-arrow-right text-2xl sm:text-3xl" aria-hidden="true">
+                &rarr;
+              </span>
+              <span>{t.cover.startChat}</span>
+              <span className="hm-arrow-left text-2xl sm:text-3xl" aria-hidden="true">
+                &larr;
+              </span>
+            </button>
 
-          <button
-            type="button"
-            onClick={onOpen}
-            className={`w-full max-w-md min-h-[4rem] px-8 py-4 text-2xl font-bold ${companionStartButtonClass}`}
-          >
-            {copy.coverStartChat}
-          </button>
+            <p
+              className={`${coverFont.className} mt-2 w-full text-center text-[1.15rem] font-normal italic leading-[1.4] tracking-[0.03em] text-white/88 drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] sm:text-[1.3rem] sm:leading-[1.35]`}
+            >
+              {t.cover.welcomeLine1}
+              <br />
+              {t.cover.welcomeLine2}
+            </p>
+
+            <div className="mt-1 grid w-full grid-cols-2 gap-1.5">
+              <LanguageSwitcher asNavButton size="cover" />
+              <DigitalClock asWindow size="cover" />
+            </div>
+          </div>
         </div>
       </div>
     </div>

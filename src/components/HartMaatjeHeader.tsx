@@ -19,17 +19,17 @@ const navIdle =
 
 export function HartMaatjeHeader() {
   const pathname = usePathname();
-  const { copy, app } = useLanguage();
+  const { copy, app, lang } = useLanguage();
 
   const primaryNav = [
-    { href: "/app/video", label: copy.navVideo },
-    { href: "/app/over", label: copy.navAbout },
+    { href: "/over", label: copy.navAbout },
+    { href: "/verhalen", label: copy.navVideo },
   ] as const;
 
   const secondaryNav = [
     { href: "/", label: copy.navHome },
-    { href: "/app/geheugen", label: copy.navMemory },
-    { href: "/app/instellingen", label: copy.navSettings },
+    { href: "/bioscoop", label: lang === "en" ? "Cinema" : "Bioscoop" },
+    { href: "/instellingen", label: copy.navSettings },
   ] as const;
 
   const isActive = (href: string) =>

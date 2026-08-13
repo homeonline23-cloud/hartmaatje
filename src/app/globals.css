@@ -84,6 +84,36 @@ body {
   animation: hm-character-enter 0.55s ease-out forwards;
 }
 
+@keyframes hm-arrow-nudge-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes hm-arrow-nudge-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+.hm-arrow-right {
+  display: inline-block;
+  animation: hm-arrow-nudge-right 1.1s ease-in-out infinite;
+}
+
+.hm-arrow-left {
+  display: inline-block;
+  animation: hm-arrow-nudge-left 1.1s ease-in-out infinite;
+}
+
 .hm-card {
   border-radius: 1.5rem;
   border: 1px solid rgba(248, 242, 232, 0.7);

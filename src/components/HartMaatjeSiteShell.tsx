@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { HartmaatjeDigitalClock } from "@/components/HartmaatjeDigitalClock";
 
 const ROOM_PATHS = [
+  "/",
   "/maatjes",
   "/gesprek",
   "/bioscoop",

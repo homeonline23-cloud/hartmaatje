@@ -17,20 +17,20 @@ export default function Home() {
     setBookOpen(false);
   }, [sessionKey]);
 
-  if (!bookOpen) {
-    return <HomeBookCover onOpen={() => setBookOpen(true)} />;
-  }
-
   return (
     <RoomI18nProvider>
-      <div className="relative min-h-screen overflow-x-hidden">
-        <InnerPageBackground />
-        <HartMaatjeHeader />
-        <main className="relative z-10 mx-auto w-full max-w-3xl px-4 py-2 pb-28">
-          <HomeCharacterLanding />
-        </main>
-        <FrontDeskButton />
-      </div>
+      {!bookOpen ? (
+        <HomeBookCover onOpen={() => setBookOpen(true)} />
+      ) : (
+        <div className="relative min-h-screen overflow-x-hidden">
+          <InnerPageBackground />
+          <HartMaatjeHeader />
+          <main className="relative z-10 mx-auto w-full max-w-3xl px-4 py-2 pb-28">
+            <HomeCharacterLanding />
+          </main>
+          <FrontDeskButton />
+        </div>
+      )}
     </RoomI18nProvider>
   );
 }
