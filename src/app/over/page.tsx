@@ -25,7 +25,7 @@ export default function OverPage() {
             </h3>
             <StoryVideoPlayer
               src={peterMedia.videoSrc}
-              coverImage="/images/over-video-poster.jpg"
+              coverImage="/images/over-video-poster.png"
               ariaLabel={t.media.storyCaption}
               playLabel={t.media.storyPlay}
             />
