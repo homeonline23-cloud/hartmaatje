@@ -20,14 +20,13 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   const navPrimary = [
-    { href: "/over", label: t.nav.about },
-    { href: "/maatjes", label: t.nav.companions },
-    { href: "/prijzen", label: t.nav.pricing },
+    { href: "/app/video", label: t.nav.listenToStories },
+    { href: "/app/over", label: t.nav.about },
   ];
   const navSecondary = [
     { href: "/", label: t.nav.home },
-    { href: "/bioscoop", label: t.nav.memory },
-    { href: "/instellingen", label: t.nav.settings },
+    { href: "/app/geheugen", label: t.nav.memory },
+    { href: "/app/instellingen", label: t.nav.settings },
   ];
 
   const btn = compact ? navBtnCompact : navBtn;

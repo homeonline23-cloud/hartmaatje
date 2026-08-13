@@ -22,15 +22,14 @@ export function HartMaatjeHeader() {
   const { copy, app } = useLanguage();
 
   const primaryNav = [
-    { href: "/over", label: copy.navAbout },
-    { href: "/maatjes", label: "Maatjes" },
-    { href: "/prijzen", label: copy.navPricing },
+    { href: "/app/video", label: copy.navVideo },
+    { href: "/app/over", label: copy.navAbout },
   ] as const;
 
   const secondaryNav = [
     { href: "/", label: copy.navHome },
-    { href: "/bioscoop", label: copy.navMemory },
-    { href: "/instellingen", label: copy.navSettings },
+    { href: "/app/geheugen", label: copy.navMemory },
+    { href: "/app/instellingen", label: copy.navSettings },
   ] as const;
 
   const isActive = (href: string) =>
@@ -73,7 +72,7 @@ export function HartMaatjeHeader() {
           className="mt-3 flex w-full flex-col gap-1.5 sm:gap-2"
           aria-label={app.header.mainNavAria}
         >
-          <div className="grid w-full grid-cols-4 gap-1.5 sm:gap-2">
+          <div className="grid w-full grid-cols-3 gap-1.5 sm:gap-2">
             {primaryNav.map((item) => (
               <Link
                 key={item.href}
