@@ -8,35 +8,45 @@ export type BioscoopCategoryId =
   | "animals"
   | "gardens";
 
-/** Temporary example images per destination — later replaced by live feed. */
-export const BIOSCOOP_CATEGORY_IMAGES: Record<BioscoopCategoryId, string> = {
-  nature: "/bioscoop/relaxing-music-therapy.png",
-  landscapes: "/bioscoop/deep-sea-ocean-creatures.png",
-  beaches: "/bioscoop/wonders-caribbean.png",
-  forests: "/bioscoop/amazon-jungle-birds.png",
-  mountains: "/bioscoop/wonders-planet-earth.png",
-  villages: "/bioscoop/rustige-dorpjes.png",
-  animals: "/bioscoop/wildlife-documentary.png",
-  gardens: "/bioscoop/bloeiende-tuinen.png",
+/** The YouTube video shown for each destination — also the source of its tile thumbnail. */
+const BIOSCOOP_CATEGORY_VIDEO_ID: Record<BioscoopCategoryId, string> = {
+  nature: "BHACKCNDMW8",
+  landscapes: "lBWZ9ls9-Oc",
+  beaches: "6D9WECs9F_I",
+  forests: "ocBKjNU-Kas",
+  mountains: "hwXoiqThXks",
+  villages: "glTaGSaRBR4",
+  animals: "osdVLIXs820",
+  gardens: "Rs3-OJBYKSY",
 };
+
+/**
+ * Tile thumbnails come straight from YouTube's own CDN (same as the workout
+ * slots below) — no local image files to host or keep in sync with the
+ * server. Previously pointed at /bioscoop/*.png files that were never
+ * actually present in the repo or on the server, so every tile showed no
+ * photo at all.
+ */
+export const BIOSCOOP_CATEGORY_IMAGES: Record<BioscoopCategoryId, string> =
+  Object.fromEntries(
+    Object.entries(BIOSCOOP_CATEGORY_VIDEO_ID).map(([id, videoId]) => [
+      id,
+      `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    ])
+  ) as Record<BioscoopCategoryId, string>;
 
 /** Optional in-window video (YouTube embed). */
 export const BIOSCOOP_CATEGORY_EMBED: Partial<
   Record<BioscoopCategoryId, string>
 > = {
-  animals:
-    "https://www.youtube.com/embed/osdVLIXs820?list=PL3pQKPQdkP_M5rGBNTxpKR42RlMI5XR0r&rel=0&modestbranding=1",
-  mountains:
-    "https://www.youtube.com/embed/hwXoiqThXks?rel=0&modestbranding=1",
-  beaches: "https://www.youtube.com/embed/6D9WECs9F_I?rel=0&modestbranding=1",
-  nature: "https://www.youtube.com/embed/BHACKCNDMW8?rel=0&modestbranding=1",
-  forests: "https://www.youtube.com/embed/ocBKjNU-Kas?rel=0&modestbranding=1",
-  landscapes:
-    "https://www.youtube.com/embed/lBWZ9ls9-Oc?list=RDlBWZ9ls9-Oc&rel=0&modestbranding=1",
-  villages:
-    "https://www.youtube.com/embed/glTaGSaRBR4?rel=0&modestbranding=1",
-  gardens:
-    "https://www.youtube.com/embed/Rs3-OJBYKSY?rel=0&modestbranding=1",
+  animals: `https://www.youtube.com/embed/${BIOSCOOP_CATEGORY_VIDEO_ID.animals}?list=PL3pQKPQdkP_M5rGBNTxpKR42RlMI5XR0r&rel=0&modestbranding=1`,
+  mountains: `https://www.youtube.com/embed/${BIOSCOOP_CATEGORY_VIDEO_ID.mountains}?rel=0&modestbranding=1`,
+  beaches: `https://www.youtube.com/embed/${BIOSCOOP_CATEGORY_VIDEO_ID.beaches}?rel=0&modestbranding=1`,
+  nature: `https://www.youtube.com/embed/${BIOSCOOP_CATEGORY_VIDEO_ID.nature}?rel=0&modestbranding=1`,
+  forests: `https://www.youtube.com/embed/${BIOSCOOP_CATEGORY_VIDEO_ID.forests}?rel=0&modestbranding=1`,
+  landscapes: `https://www.youtube.com/embed/${BIOSCOOP_CATEGORY_VIDEO_ID.landscapes}?list=RDlBWZ9ls9-Oc&rel=0&modestbranding=1`,
+  villages: `https://www.youtube.com/embed/${BIOSCOOP_CATEGORY_VIDEO_ID.villages}?rel=0&modestbranding=1`,
+  gardens: `https://www.youtube.com/embed/${BIOSCOOP_CATEGORY_VIDEO_ID.gardens}?rel=0&modestbranding=1`,
 };
 
 export const BIOSCOOP_CATEGORY_IDS: readonly BioscoopCategoryId[] = [
