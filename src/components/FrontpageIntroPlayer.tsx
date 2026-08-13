@@ -104,7 +104,7 @@ export function FrontpageIntroPlayer() {
           className="pointer-events-none absolute inset-0 z-[5]"
           aria-hidden="true"
           style={{
-            backgroundImage: "url(/images/home-intro-poster.png)",
+            backgroundImage: "url(/images/home-intro-poster.jpg)",
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
