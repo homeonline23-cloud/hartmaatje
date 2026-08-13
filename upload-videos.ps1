@@ -34,7 +34,8 @@ scp "$src\FR - Hartmaatje-colette.mp4"          "${server}:${dest}/avatars/colet
 scp "$src\ES - Hartmaatje-colette.mp4"          "${server}:${dest}/avatars/colette/welcome.es.mp4"
 
 Write-Host "Stap 6: Verhaalvideo's uploaden (groot, dit duurt even)..." -ForegroundColor Green
-scp "$src\NL - Hartmaatje met Einde (127mb)-verhaal.mp4"  "${server}:${dest}/videos/hartmaatje-verhaal.nl.mp4"
+scp "$src\NL- Hartmaatje met Einde (127mb)-verhaal.mp4"   "${server}:${dest}/videos/hartmaatje-verhaal.nl.mp4"
+scp "$src\Hartmaatje met-story-(127mb).mp4"               "${server}:${dest}/videos/hartmaatje-verhaal.nl.mp4"
 scp "$src\EN - Hartmaatje-story- (127mb).mp4"             "${server}:${dest}/videos/hartmaatje-verhaal.en.mp4"
 scp "$src\DE - Hartmaatje met-story-(127mb).mp4"          "${server}:${dest}/videos/hartmaatje-verhaal.de.mp4"
 scp "$src\FR - Hartmaatje met-story-(127mb).mp4"          "${server}:${dest}/videos/hartmaatje-verhaal.fr.mp4"
@@ -46,6 +47,15 @@ scp "$src\alleen-en-eenzaam.mp4"  "${server}:${dest}/videos/alleen-en-eenzaam.en
 scp "$src\alleen-en-eenzaam.mp4"  "${server}:${dest}/videos/alleen-en-eenzaam.de.mp4"
 scp "$src\alleen-en-eenzaam.mp4"  "${server}:${dest}/videos/alleen-en-eenzaam.fr.mp4"
 scp "$src\alleen-en-eenzaam.mp4"  "${server}:${dest}/videos/alleen-en-eenzaam.es.mp4"
+
+Write-Host "Stap 8: Maarten verhaalvideo's (Sweet Dreams) uploaden..." -ForegroundColor Green
+$maarten = "C:\DEV\Hartmaatje\HartMaatje-Maarten-dubs"
+ssh $server "mkdir -p /opt/hartmaatje/public/videos/stories"
+scp "$maarten\NL-maarten-Dubbed.mp4"        "${server}:${dest}/videos/stories/sweet-dreams-do-come-true.nl.mp4"
+scp "$maarten\Maarten-SweetDreams-EN.mp4"   "${server}:${dest}/videos/stories/sweet-dreams-do-come-true.en.mp4"
+scp "$maarten\Maarten-SweetDreams-DE.mp4"   "${server}:${dest}/videos/stories/sweet-dreams-do-come-true.de.mp4"
+scp "$maarten\Maarten-SweetDreams-FR.mp4"   "${server}:${dest}/videos/stories/sweet-dreams-do-come-true.fr.mp4"
+scp "$maarten\Maarten-SweetDreams-ES.mp4"   "${server}:${dest}/videos/stories/sweet-dreams-do-come-true.es.mp4"
 
 Write-Host "" 
 Write-Host "Klaar! Alle video's zijn geupload naar uw server." -ForegroundColor Green
