@@ -102,6 +102,87 @@ export async function geminiGenerateText(
   return text || null;
 }
 
+/** Stream reply tokens as they arrive — first words can be spoken before the full answer is ready. */
+export async function* geminiGenerateTextStream(
+  systemPrompt: string,
+  turns: GeminiTurn[],
+  options?: {
+    maxOutputTokens?: number;
+    temperature?: number;
+    model?: string;
+    fast?: boolean;
+  },
+): AsyncGenerator<string> {
+  const cfg = getGeminiConfig();
+  if (!cfg) return;
+  const model = options?.model ?? cfg.model;
+
+  const contents = turns.map((t) => ({
+    role: t.role,
+    parts: [{ text: t.text }],
+  }));
+
+  const generationConfig = options?.fast
+    ? voiceGenerationConfig({
+        temperature: options?.temperature,
+        maxOutputTokens: options?.maxOutputTokens,
+      })
+    : {
+        temperature: options?.temperature ?? 0.92,
+        maxOutputTokens: options?.maxOutputTokens ?? 480,
+      };
+
+  const res = await fetch(
+    `${GEMINI_BASE}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(cfg.apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents,
+        generationConfig,
+      }),
+    },
+  );
+
+  if (!res.ok || !res.body) {
+    const fallback = await geminiGenerateText(systemPrompt, turns, options);
+    if (fallback) yield fallback;
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split("\n\n");
+    buffer = blocks.pop() ?? "";
+    for (const block of blocks) {
+      const dataLine = block
+        .split("\n")
+        .find((line) => line.startsWith("data:"));
+      if (!dataLine) continue;
+      const raw = dataLine.slice(5).trim();
+      if (!raw || raw === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(raw) as {
+          candidates?: Array<{
+            content?: { parts?: Array<{ text?: string }> };
+          }>;
+        };
+        const piece = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (piece) yield piece;
+      } catch {
+        /* ignore malformed SSE chunks */
+      }
+    }
+  }
+}
+
 function sttModelName(cfg: { apiKey: string; model: string }): string {
   return process.env.GEMINI_STT_MODEL?.trim() || cfg.model;
 }

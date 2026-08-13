@@ -5,7 +5,6 @@ import {
   CompanionApiError,
   parseApiErrorResponse,
 } from "@/lib/http/companionApiError";
-import { retryFetch } from "@/lib/http/retryFetch";
 import {
   hartmaatjeApi,
   isBackendSessionId,
@@ -23,6 +22,11 @@ export type VoiceTurnResult = {
   remainingText?: string;
   source: "backend" | "next";
   timings_ms?: Record<string, number>;
+};
+
+export type VoiceTurnStreamHandlers = {
+  onUserText?: (text: string) => void;
+  onReplyDelta?: (fullSoFar: string) => void;
 };
 
 async function backendTurn(
@@ -70,8 +74,9 @@ async function nextJsTurn(
   sessionId: string | null,
   identityId: VoiceIdentityId = "fenna",
   addressForm: "formeel" | "informeel" = "formeel",
+  handlers?: VoiceTurnStreamHandlers,
 ): Promise<VoiceTurnResult> {
-  voiceLog("one-shot voice turn → /api/fenna-voice-turn", {
+  voiceLog("streaming voice turn → /api/fenna-voice-turn/stream", {
     identityId,
     bytes: blob.size,
     mime: blob.type || "audio/webm",
@@ -89,64 +94,89 @@ async function nextJsTurn(
   });
 
   try {
-    const res = await retryFetch(
-      "/api/fenna-voice-turn",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          audio_base64: base64,
-          mime_type: blob.type || "audio/webm",
-          lang: toBackendLang(lang),
-          history: history.slice(-12).map((m) => ({ role: m.role, content: m.content })),
-          resident_id: residentId,
-          session_id: sessionId ?? undefined,
-          identity_id: identityId,
-          address_form: addressForm,
-        }),
-        signal: timeoutController.signal,
-      },
-      { signal: timeoutController.signal, maxAttempts: 1 },
-    );
+    const res = await fetch("/api/fenna-voice-turn/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audio_base64: base64,
+        mime_type: blob.type || "audio/webm",
+        lang: toBackendLang(lang),
+        history: history.slice(-12).map((m) => ({ role: m.role, content: m.content })),
+        resident_id: residentId,
+        session_id: sessionId ?? undefined,
+        identity_id: identityId,
+        address_form: addressForm,
+      }),
+      signal: timeoutController.signal,
+    });
 
-    const data = (await res.json()) as {
-      userText?: string;
-      user_text?: string;
-      reply?: string;
-      audioBase64?: string;
-      audio_base64?: string;
-      mimeType?: string;
-      mime_type?: string;
-      timings_ms?: Record<string, number>;
-      error?: string;
-      quotaExceeded?: boolean;
-      resetHint?: string;
-    };
-
-    if (!res.ok) {
+    if (!res.ok || !res.body) {
       if (res.status === 0 || getCompanionVoiceAbortSignal()?.aborted) {
         throw new Error("SESSION_ENDED");
       }
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       throw parseApiErrorResponse(
         res,
-        data as Record<string, unknown>,
+        data,
         lang === "en" ? "Speech failed." : "Spraak mislukt.",
       );
     }
 
-    const userText = (data.userText ?? data.user_text ?? "").trim();
-    const reply = (data.reply ?? "").trim();
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let userText = "";
+    let reply = "";
+    let timings_ms: Record<string, number> | undefined;
 
-    voiceLog("STT result", { text: userText });
-    voiceLog("LLM reply", { text: reply, chars: reply.length });
-    voiceLog("turn transcript", { user: userText, assistant: reply });
-    voiceLog("text ready", { timings_ms: data.timings_ms });
+    const consume = (block: string) => {
+      const line = block.split("\n").find((item) => item.startsWith("data:"));
+      if (!line) return;
+      const raw = line.slice(5).trim();
+      if (!raw) return;
+      const event = JSON.parse(raw) as {
+        type?: string;
+        userText?: string;
+        text?: string;
+        reply?: string;
+        message?: string;
+        timings_ms?: Record<string, number>;
+      };
+      if (event.type === "error") {
+        throw new Error(event.message || (lang === "en" ? "Speech failed." : "Spraak mislukt."));
+      }
+      if (event.type === "stt" && event.userText) {
+        userText = event.userText;
+        handlers?.onUserText?.(userText);
+        voiceLog("STT result", { text: userText, streamed: true });
+      }
+      if (event.type === "delta" && event.text) {
+        reply += event.text;
+        handlers?.onReplyDelta?.(reply);
+      }
+      if (event.type === "done") {
+        userText = event.userText || userText;
+        reply = event.reply || reply;
+        timings_ms = event.timings_ms;
+      }
+    };
 
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split("\n\n");
+      buffer = blocks.pop() ?? "";
+      for (const block of blocks) consume(block);
+    }
+    if (buffer.trim()) consume(buffer);
+
+    voiceLog("LLM reply", { text: reply, chars: reply.length, streamed: true });
     return {
-      userText,
-      reply,
+      userText: userText.trim(),
+      reply: reply.trim(),
       source: "next",
-      timings_ms: data.timings_ms,
+      timings_ms,
     };
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
@@ -171,6 +201,7 @@ export async function processCompanionVoiceTurn(
   residentId = "guest",
   identityId: VoiceIdentityId = "fenna",
   addressForm: "formeel" | "informeel" = "formeel",
+  handlers?: VoiceTurnStreamHandlers,
 ): Promise<VoiceTurnResult> {
   if (isBackendSessionId(sessionId)) {
     try {
@@ -181,7 +212,16 @@ export async function processCompanionVoiceTurn(
       });
     }
   }
-  return nextJsTurn(blob, lang, history, residentId, sessionId, identityId, addressForm);
+  return nextJsTurn(
+    blob,
+    lang,
+    history,
+    residentId,
+    sessionId,
+    identityId,
+    addressForm,
+    handlers,
+  );
 }
 
 /** @deprecated use processCompanionVoiceTurn */

@@ -22,15 +22,15 @@ export function HartMaatjeHeader() {
   const { copy, app } = useLanguage();
 
   const primaryNav = [
-    { href: "/app/video", label: copy.navVideo },
-    { href: "/app/over", label: copy.navAbout },
-    { href: "/app/prijzen", label: copy.navPricing },
+    { href: "/over", label: copy.navAbout },
+    { href: "/maatjes", label: "Maatjes" },
+    { href: "/prijzen", label: copy.navPricing },
   ] as const;
 
   const secondaryNav = [
     { href: "/", label: copy.navHome },
-    { href: "/app/geheugen", label: copy.navMemory },
-    { href: "/app/instellingen", label: copy.navSettings },
+    { href: "/bioscoop", label: copy.navMemory },
+    { href: "/instellingen", label: copy.navSettings },
   ] as const;
 
   const isActive = (href: string) =>

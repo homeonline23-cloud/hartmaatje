@@ -54,12 +54,20 @@ const RESIDENT_KEY = "hartmaatje_resident";
 export type CompanionVoiceSessionProps = {
   identityId: VoiceIdentityId;
   onBack?: () => void;
+  /** Welcome clip already played on /gesprek — skip the second intro. */
+  skipWelcome?: boolean;
+  /** Parent already shows LiveCompanionFace. */
+  hidePortrait?: boolean;
+  onPhaseChange?: (phase: Phase) => void;
 };
 
 /** Zelfde voice-ervaring voor Fenna, Maarten, Peter en Colette. */
 export function CompanionVoiceSession({
   identityId,
   onBack,
+  skipWelcome = false,
+  hidePortrait = false,
+  onPhaseChange,
 }: CompanionVoiceSessionProps) {
   const { copy, app, lang } = useLanguage();
   const { profile } = useAuth();
@@ -78,7 +86,9 @@ export function CompanionVoiceSession({
   const [ttsWarning, setTtsWarning] = useState<string | null>(null);
   const [textOnlyMode, setTextOnlyMode] = useState(false);
   const [typedDraft, setTypedDraft] = useState("");
-  const [welcomeOpen, setWelcomeOpen] = useState(() => hasWelcomeVideo(identityId));
+  const [welcomeOpen, setWelcomeOpen] = useState(
+    () => !skipWelcome && hasWelcomeVideo(identityId),
+  );
 
   const sessionIdRef = useRef<string | null>(null);
   const residentIdRef = useRef("guest");
@@ -121,6 +131,10 @@ export function CompanionVoiceSession({
   }
 
   useEffect(() => {
+    onPhaseChange?.(phase);
+  }, [onPhaseChange, phase]);
+
+  useEffect(() => {
     addressFormRef.current =
       profile?.address_form === "informeel" ? "informeel" : "formeel";
   }, [profile?.address_form]);
@@ -131,7 +145,7 @@ export function CompanionVoiceSession({
     listenerRef.current?.stop();
     listenerRef.current = null;
     sessionIdRef.current = null;
-    setWelcomeOpen(hasWelcomeVideo(identityId));
+    setWelcomeOpen(!skipWelcome && hasWelcomeVideo(identityId));
     setPhase("idle");
     setSessionActive(false);
     setMessages([]);
@@ -143,7 +157,7 @@ export function CompanionVoiceSession({
     setTypedDraft("");
     setMicLive(false);
     setRecording(false);
-  }, [identityId]);
+  }, [identityId, skipWelcome]);
 
   const closeWelcome = useCallback(() => {
     welcomeVideoRef.current?.pause();
@@ -293,6 +307,7 @@ export function CompanionVoiceSession({
 
     try {
       timings.apiStartAt = Date.now();
+      let pendingAssistantId: string | null = null;
       const turn = await processCompanionVoiceTurn(
         blob,
         langRef.current,
@@ -301,6 +316,26 @@ export function CompanionVoiceSession({
         residentIdRef.current,
         identityRef.current,
         addressFormRef.current,
+        {
+          onUserText: (text) => {
+            updateMessage(pendingUserId, text);
+          },
+          onReplyDelta: (fullSoFar) => {
+            if (!pendingAssistantId) {
+              pendingAssistantId = `assistant-${Date.now()}`;
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: pendingAssistantId!,
+                  role: "assistant",
+                  content: fullSoFar,
+                },
+              ]);
+            } else {
+              updateMessage(pendingAssistantId, fullSoFar);
+            }
+          },
+        },
       );
       if (!isCompanionVoiceSessionActive(gen)) {
         removeMessage(pendingUserId);
@@ -340,8 +375,10 @@ export function CompanionVoiceSession({
       logTurnTimings("voice turn", timings);
 
       updateMessage(pendingUserId, turn.userText);
-      if (!isApiErrorPayload(turn.reply)) {
+      if (!isApiErrorPayload(turn.reply) && !pendingAssistantId) {
         addMessage("assistant", turn.reply);
+      } else if (!isApiErrorPayload(turn.reply) && pendingAssistantId) {
+        updateMessage(pendingAssistantId, turn.reply);
       }
 
       try {
@@ -823,7 +860,7 @@ export function CompanionVoiceSession({
         >
           {statusText}
         </div>
-        {portraitPanel}
+        {hidePortrait ? null : portraitPanel}
         <div className="min-h-0 flex-1 overflow-y-auto">
           <p className="px-5 py-2.5 text-center text-lg leading-snug text-[#5c4a32] sm:text-xl">
             {copy.voiceInstruction}
@@ -858,7 +895,7 @@ export function CompanionVoiceSession({
         {statusText}
       </div>
 
-      {portraitPanel}
+      {hidePortrait ? null : portraitPanel}
 
       <div
         ref={transcriptRef}

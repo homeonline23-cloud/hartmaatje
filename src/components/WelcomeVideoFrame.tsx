@@ -13,6 +13,8 @@ type WelcomeVideoFrameProps = {
   className?: string;
   /** Grootte van de concave hoek-insnijding (deel van beeld — groter = meer groen in de hoek). */
   scoopRadius?: number;
+  /** Ignored — mask id is generated. Kept for restored room pages. */
+  maskKey?: string;
 };
 
 /**

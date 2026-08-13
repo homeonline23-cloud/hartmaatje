@@ -11,6 +11,7 @@ import {
 } from "@/lib/memory/orchestrator";
 import {
   geminiGenerateText,
+  geminiGenerateTextStream,
   geminiLiveVoiceTurn,
   geminiTranscribeAudio,
   getVoiceGeminiConfig,
@@ -255,6 +256,148 @@ export async function runCompanionVoiceTurn(input: {
     timings_ms: {
       stt: tStt - t0,
       llm: path === "live" ? 0 : tDone - tStt,
+      total: tDone - t0,
+    },
+  };
+}
+
+export type VoiceTurnStreamEvent =
+  | { type: "stt"; userText: string }
+  | { type: "delta"; text: string }
+  | {
+      type: "done";
+      userText: string;
+      reply: string;
+      memoryUpdated?: boolean;
+      timings_ms: Record<string, number>;
+    }
+  | { type: "error"; message: string };
+
+/** Same voice turn, but LLM tokens stream out so speech can start on the first sentence. */
+export async function* runCompanionVoiceTurnStream(input: {
+  audioBase64: string;
+  mimeType: string;
+  lang: AppLang;
+  history?: HistoryItem[];
+  identityId?: VoiceIdentityId;
+  residentId?: string;
+  sessionId?: string;
+  addressForm?: "formeel" | "informeel";
+}): AsyncGenerator<VoiceTurnStreamEvent> {
+  const t0 = Date.now();
+  const lang = input.lang;
+  const coreLang = normalizeCoreLang(lang);
+  const identityId = input.identityId ?? "fenna";
+  const voiceCfg = getVoiceGeminiConfig();
+  const voiceModel = voiceCfg?.model;
+  const addressForm = input.addressForm === "informeel" ? "informeel" : "formeel";
+  const mimeType = normalizeGeminiAudioMime(input.mimeType);
+
+  if (!input.audioBase64?.trim() || input.audioBase64.length < 120) {
+    yield {
+      type: "error",
+      message:
+        lang === "en"
+          ? "That was too short — please speak a little longer."
+          : "Dat was te kort — spreek alstublieft iets langer.",
+    };
+    return;
+  }
+
+  const residentId = input.residentId?.trim() || "guest";
+  const history = Array.isArray(input.history) ? input.history.slice(-HISTORY_LIMIT) : [];
+  const memoryLight = buildVoiceMemoryContext({
+    residentId,
+    lang,
+    sessionId: input.sessionId,
+    recentHistory: history,
+  });
+  const historyTurns: GeminiTurn[] = history.map((h) => ({
+    role: h.role === "assistant" ? ("model" as const) : ("user" as const),
+    text: h.content,
+  }));
+
+  const sttRaw = await geminiTranscribeAudio(
+    input.audioBase64,
+    mimeType,
+    coreLang,
+    voiceModel,
+  );
+  const tStt = Date.now();
+  const userText = (sttRaw?.trim() || "").trim();
+  if (!userText) {
+    yield {
+      type: "error",
+      message:
+        lang === "en"
+          ? "I did not catch that — please try again."
+          : "Ik hoorde u niet goed — probeer het nog eens.",
+    };
+    return;
+  }
+
+  yield { type: "stt", userText };
+
+  const turnHints = getExtraTurnHints(userText, lang, identityId);
+  const systemPrompt = getVoiceSystemPrompt(
+    identityId,
+    lang,
+    memoryLight.promptBlock,
+    turnHints,
+    addressForm,
+  );
+  const turns: GeminiTurn[] = [...historyTurns, { role: "user", text: userText }];
+
+  let raw = "";
+  for await (const piece of geminiGenerateTextStream(systemPrompt, turns, {
+    temperature: isExclusivityOrDependencyRequest(userText) ? 0.72 : 0.65,
+    maxOutputTokens: 140,
+    model: voiceModel,
+    fast: true,
+  })) {
+    raw += piece;
+    yield { type: "delta", text: piece };
+  }
+
+  let reply = raw ? cleanReply(raw) : "";
+  if (!reply) {
+    reply =
+      lang === "en"
+        ? "I'm listening — could you say that once more?"
+        : "Ik luister — wilt u dat nog een keer zeggen?";
+  }
+
+  const tDone = Date.now();
+  void appendVoiceTranscript({
+    kind: "turn",
+    identityId,
+    lang,
+    sessionId: input.sessionId,
+    userText,
+    reply,
+    path: "llm",
+    timings_ms: {
+      stt: tStt - t0,
+      llm: tDone - tStt,
+      total: tDone - t0,
+    },
+  });
+  ingestTurnAsync({
+    residentId,
+    sessionId: input.sessionId,
+    userText,
+    assistantReply: reply,
+    lang,
+  });
+
+  yield {
+    type: "done",
+    userText,
+    reply,
+    memoryUpdated: true,
+    timings_ms: {
+      stt: tStt - t0,
+      llm: tDone - tStt,
       total: tDone - t0,
     },
   };
