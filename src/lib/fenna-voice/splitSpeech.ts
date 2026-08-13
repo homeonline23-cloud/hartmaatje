@@ -1,8 +1,14 @@
 /** Split reply so TTS can start on the first sentence(s) while the rest is generated. */
+
+/** Replies at or below this length use one TTS request — splitting would not help. */
+export const FAST_SPEECH_SINGLE_REQUEST_MAX_CHARS = 200;
+
 export function splitForFastSpeech(text: string): { first: string; rest: string } {
   const trimmed = text.trim();
   if (!trimmed) return { first: "", rest: "" };
-  if (trimmed.length <= 200) return { first: trimmed, rest: "" };
+  if (trimmed.length <= FAST_SPEECH_SINGLE_REQUEST_MAX_CHARS) {
+    return { first: trimmed, rest: "" };
+  }
 
   const sentences = trimmed.match(/[^.!?…]+[.!?…]+/g);
   if (sentences?.length) {

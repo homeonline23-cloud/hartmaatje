@@ -3,7 +3,7 @@
 from app.domain.models.dialogue import ResponsePlan
 from app.domain.models.nlu import NluResult
 from app.domain.models.persona import PersonaConfig
-from app.services.quality.quality_enforcer import validate_reply
+from app.services.quality.quality_enforcer import needs_llm_retry, validate_reply
 
 
 def _persona() -> PersonaConfig:
@@ -42,3 +42,25 @@ def test_strips_generic_filler_question_even_when_allowed() -> None:
     assert "generic_filler_question" in violations
     assert "waar wilt u het over hebben" not in text.lower()
     assert "Dat klinkt gezellig." in text
+
+
+def test_locally_repaired_filler_does_not_need_llm_retry() -> None:
+    plan = ResponsePlan(follow_up_allowed=True, max_questions=1)
+    reply = "Dat klinkt gezellig. Waar wilt u het over hebben?"
+    _, violations, guard = validate_reply(reply, plan, _persona(), NluResult(), "nl")
+    assert "generic_filler_question" in violations
+    assert needs_llm_retry(violations, guard.reply_violations) is False
+
+
+def test_too_many_questions_does_not_need_llm_retry() -> None:
+    plan = ResponsePlan(follow_up_allowed=False, max_questions=0)
+    reply = "Dat klinkt fijn. Hoe voelt u zich daarbij?"
+    _, violations, guard = validate_reply(reply, plan, _persona(), NluResult(), "nl")
+    assert "too_many_questions" in violations
+    assert needs_llm_retry(violations, guard.reply_violations) is False
+
+
+def test_identity_drift_still_needs_llm_retry() -> None:
+    assert needs_llm_retry(["identity_drift"], []) is True
+    assert needs_llm_retry([], ["dependency_language"]) is True
+

@@ -10,6 +10,7 @@ from typing import Literal, Optional
 import httpx
 
 from app.core.config import get_settings
+from app.services.llm.generation_config import flash_generation_config
 
 logger = logging.getLogger(__name__)
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -41,8 +42,9 @@ async def transcribe_audio(
             "Bij onduidelijkheid: het kortste passende fragment — nooit een naam verzinnen."
         )
 
+    stt_model = settings.gemini_stt_model or settings.gemini_model
     url = (
-        f"{GEMINI_BASE}/{settings.gemini_model}:generateContent"
+        f"{GEMINI_BASE}/{stt_model}:generateContent"
         f"?key={settings.gemini_api_key}"
     )
     body = {
@@ -55,7 +57,11 @@ async def transcribe_audio(
                 ],
             }
         ],
-        "generationConfig": {"temperature": 0.0, "maxOutputTokens": 200},
+        "generationConfig": flash_generation_config(
+            temperature=0.0,
+            max_output_tokens=200,
+            model=stt_model,
+        ),
     }
 
     try:

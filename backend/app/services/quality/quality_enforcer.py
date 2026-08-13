@@ -92,6 +92,30 @@ def validate_reply(
     return text, _unique(violations), safety
 
 
+# Safety / identity issues cannot be patched locally — those need a new LLM reply.
+_RETRY_VIOLATIONS = frozenset(
+    {
+        "identity_drift",
+        "medical_diagnosis",
+        "medication_advice",
+        "dependency_language",
+        "possessive_language",
+    }
+)
+
+
+def needs_llm_retry(quality_violations: list[str], reply_violations: list[str]) -> bool:
+    """True only when the reply is unsafe or claims the wrong identity.
+
+    Length, extra questions, and filler closers are already repaired in
+    validate_reply. Retrying those doubles the silent wait after the user
+    stops talking.
+    """
+    if reply_violations:
+        return True
+    return any(v in _RETRY_VIOLATIONS for v in quality_violations)
+
+
 def build_quality_retry_hint(violations: list[str], lang: AppLang) -> str:
     """Retry hint for the LLM when quality checks fail."""
     en = lang == "en"

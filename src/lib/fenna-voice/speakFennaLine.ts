@@ -10,7 +10,10 @@ import {
 } from "@/lib/http/companionApiError";
 import { retryFetch } from "@/lib/http/retryFetch";
 import { isGeminiQuotaError } from "@/lib/geminiErrors";
-import { splitForFastSpeech } from "@/lib/fenna-voice/splitSpeech";
+import {
+  FAST_SPEECH_SINGLE_REQUEST_MAX_CHARS,
+  splitForFastSpeech,
+} from "@/lib/fenna-voice/splitSpeech";
 import { playFennaAudio } from "@/lib/fenna-voice/playback";
 import {
   getCompanionVoiceAbortSignal,
@@ -150,8 +153,10 @@ async function playGeminiSpeech(
   const cleaned = text.trim();
   if (!cleaned) return;
 
-  // Eén TTS-aanvraag voor normale antwoorden — voorkomt afgekapte zinnen.
-  if (cleaned.length <= 900) {
+  // Start the first sentence as soon as it is ready. Waiting for the whole
+  // reply to become audio is a large part of the silent 4–10s after the user
+  // stops talking. splitForFastSpeech only cuts on complete sentences.
+  if (cleaned.length <= FAST_SPEECH_SINGLE_REQUEST_MAX_CHARS) {
     const clip = await fetchCompanionSpeech(
       cleaned,
       lang,

@@ -17,7 +17,11 @@ from app.services.memory.memory_service import JsonMemoryService, MemoryContext,
 from app.services.memory.pipeline import get_memory_pipeline
 from app.services.personas.persona_loader import get_persona, normalize_persona_id
 from app.services.prompts.prompt_builder import build_system_prompt
-from app.services.quality.quality_enforcer import build_quality_retry_hint, validate_reply
+from app.services.quality.quality_enforcer import (
+    build_quality_retry_hint,
+    needs_llm_retry,
+    validate_reply,
+)
 from app.services.dialogue.response_planner import build_response_plan
 from app.services.safety.safety_guard import analyze_user_message
 from app.services.chat.session_manager import Session
@@ -188,21 +192,20 @@ class ChatOrchestrator:
             SAFETY_EN["default"] if lang == "en" else "Ik ben er — noem maar waar u aan denkt."
         )
 
-        # 9. Quality enforcement
+        # 9. Quality enforcement — local repair first; extra LLM only for safety.
         reply, quality_violations, reply_guard = validate_reply(
             reply, plan, persona, nlu, lang
         )
         retried = False
-        retry_hints: list[str] = []
 
-        if reply_guard.reply_violations:
-            retry_hints.append(
-                "Avoid dependency, possessive, medical, or wrong identity language."
-            )
-        if quality_violations:
-            retry_hints.append(build_quality_retry_hint(quality_violations, lang))
-
-        if retry_hints:
+        if needs_llm_retry(quality_violations, reply_guard.reply_violations):
+            retry_hints: list[str] = []
+            if reply_guard.reply_violations:
+                retry_hints.append(
+                    "Avoid dependency, possessive, medical, or wrong identity language."
+                )
+            if quality_violations:
+                retry_hints.append(build_quality_retry_hint(quality_violations, lang))
             retry = await generate_companion_reply(
                 system_prompt=system_prompt + "\n\n" + " ".join(retry_hints),
                 persona=persona,

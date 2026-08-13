@@ -13,6 +13,7 @@ from app.domain.models.dialogue import ResponsePlan
 from app.domain.models.persona import PersonaConfig
 from app.services.chat.session_manager import ChatTurn
 from app.services.chat.speech_sanitize import sanitize_fenna_reply
+from app.services.llm.generation_config import flash_generation_config
 
 logger = logging.getLogger(__name__)
 
@@ -64,10 +65,11 @@ async def generate_companion_reply(
     body: dict = {
         "systemInstruction": {"parts": [{"text": system_prompt}]},
         "contents": contents,
-        "generationConfig": {
-            "temperature": 0.82,
-            "maxOutputTokens": max_tokens,
-        },
+        "generationConfig": flash_generation_config(
+            temperature=0.82,
+            max_output_tokens=max_tokens,
+            model=settings.gemini_model,
+        ),
     }
 
     text = await _call_gemini(url, body)

@@ -30,6 +30,8 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
+    # Fast STT — transcription does not need the larger chat model.
+    gemini_stt_model: str = "gemini-2.5-flash-lite"
     gemini_tts_model: str = "gemini-2.5-flash-preview-tts"
 
     # Per-persona Gemini TTS prebuilt voice — must match src/lib/voice/geminiVoiceConfig.ts
