@@ -3,12 +3,13 @@
 import { AppShell } from "@/components/AppShell";
 import { StoryVideoPlayer } from "@/components/StoryVideoPlayer";
 import { useI18n } from "@/i18n/LanguageProvider";
-import { resolveAloneMedia, resolveIntroductionVideoMedia } from "@/lib/mediaByLang";
+import { resolveAloneMedia, resolveIntroductionVideoMedia, resolveStoryMedia } from "@/lib/mediaByLang";
 
 export default function OverPage() {
   const { t, lang } = useI18n();
   const aloneMedia = resolveAloneMedia(lang);
   const introductionMedia = resolveIntroductionVideoMedia(lang);
+  const storyMedia = resolveStoryMedia(lang);
 
   return (
     <AppShell>
@@ -23,8 +24,8 @@ export default function OverPage() {
               {t.media.storyCaption}
             </h3>
             <StoryVideoPlayer
+              src={storyMedia.videoSrc}
               poster="/avatars/peter/portrait.png"
-              coverImage="/images/over-video-poster.png"
               ariaLabel={t.media.storyCaption}
               playLabel={t.media.storyPlay}
             />
