@@ -63,7 +63,7 @@ export function StoryVideoPlayer({
         controls={playing}
         playsInline
         preload="metadata"
-        poster={poster}
+        poster={coverImage ?? poster}
         aria-label={ariaLabel}
         onPlay={() => {
           setPlaying(true);
