@@ -37,6 +37,7 @@ export default function OverPage() {
             </h3>
             <StoryVideoPlayer
               src={introductionMedia.videoSrc}
+              coverImage="/images/zoete-dromen-poster.jpg"
               ariaLabel={t.about.introductionTitle}
               playLabel={t.media.storyPlay}
             />
