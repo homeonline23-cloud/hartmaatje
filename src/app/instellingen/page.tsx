@@ -15,10 +15,19 @@ const link =
   "mt-1 text-sm font-semibold text-[#3f6339] underline underline-offset-2";
 
 export default function InstellingenPage() {
+  return (
+    <AppShell compact>
+      <InstellingenContent />
+    </AppShell>
+  );
+}
+
+/** Needs to render inside AppShell's own LanguageProvider, not above it. */
+function InstellingenContent() {
   const { t, lang } = useI18n();
   const [frontDeskOpen, setFrontDeskOpen] = useState(false);
   return (
-    <AppShell compact>
+    <>
       <section className="hm-card px-3 py-3 pb-20">
         <h2 className="text-center font-[family-name:var(--font-display)] text-xl font-semibold text-[#3f6339]">
           {t.settings.title}
@@ -81,6 +90,6 @@ export default function InstellingenPage() {
         isOpen={frontDeskOpen}
         onClose={() => setFrontDeskOpen(false)}
       />
-    </AppShell>
+    </>
   );
 }

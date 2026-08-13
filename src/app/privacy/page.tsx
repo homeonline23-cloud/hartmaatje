@@ -92,29 +92,36 @@ function PrivacyPolicyVideo({ videoSrc }: { videoSrc: string }) {
 }
 
 export default function PrivacyPage() {
+  return (
+    <AppShell>
+      <PrivacyContent />
+    </AppShell>
+  );
+}
+
+/** Needs to render inside AppShell's own LanguageProvider, not above it. */
+function PrivacyContent() {
   const { lang } = useI18n();
   const p = getPrivacyContent(lang);
   const privacyMedia = resolvePrivacyPolicyMedia(lang);
 
   return (
-    <AppShell>
-      <article className="pb-20 sm:pb-24">
-        <section className="hm-card space-y-4 px-4 pt-3.5 pb-10 sm:px-5 sm:pt-4 sm:pb-12">
-          <header className="relative flex items-start justify-between gap-3 text-left">
-            <div className="min-w-0">
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold leading-tight text-[#3f6339] sm:text-2xl">
-                {p.title}
-              </h2>
-              <p className="mt-1 text-sm text-[#3f6339]">{p.updated}</p>
-            </div>
-            <div className="shrink-0">
-              <BackToSettingsLink />
-            </div>
-          </header>
+    <article className="pb-20 sm:pb-24">
+      <section className="hm-card space-y-4 px-4 pt-3.5 pb-10 sm:px-5 sm:pt-4 sm:pb-12">
+        <header className="relative flex items-start justify-between gap-3 text-left">
+          <div className="min-w-0">
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold leading-tight text-[#3f6339] sm:text-2xl">
+              {p.title}
+            </h2>
+            <p className="mt-1 text-sm text-[#3f6339]">{p.updated}</p>
+          </div>
+          <div className="shrink-0">
+            <BackToSettingsLink />
+          </div>
+        </header>
 
-          <PrivacyPolicyVideo videoSrc={privacyMedia.videoSrc} />
-        </section>
-      </article>
-    </AppShell>
+        <PrivacyPolicyVideo videoSrc={privacyMedia.videoSrc} />
+      </section>
+    </article>
   );
 }
