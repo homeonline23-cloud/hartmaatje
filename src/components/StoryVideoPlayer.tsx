@@ -59,10 +59,10 @@ export function StoryVideoPlayer({
       <video
         ref={videoRef}
         key={`story-${lang}-${videoSrc}`}
-        className="h-full w-full object-cover"
+        className={`h-full w-full object-cover ${showPlay ? "opacity-0" : "opacity-100"}`}
         controls={playing}
         playsInline
-        preload="metadata"
+        preload="none"
         poster={coverImage ?? poster}
         aria-label={ariaLabel}
         onPlay={() => {
@@ -85,15 +85,11 @@ export function StoryVideoPlayer({
       </video>
 
       {showPlay && coverImage ? (
-        <div
-          className="pointer-events-none absolute inset-0 z-[5]"
-          aria-hidden="true"
-          style={{
-            backgroundImage: `url(${coverImage})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={coverImage}
+          alt=""
+          className="pointer-events-none absolute inset-0 z-[5] h-full w-full object-cover"
         />
       ) : null}
 
