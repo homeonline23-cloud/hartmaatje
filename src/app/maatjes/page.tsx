@@ -1,11 +1,13 @@
-import { AppShell } from "@/components/AppShell";
-import { CompanionPicker } from "@/components/CompanionPicker";
+"use client";
 
-/** Choose a companion — reached from the cover “Start gesprek” button. */
+import { AppShell } from "@/components/AppShell";
+import { HomeCharacterLanding } from "@/components/HomeCharacterLanding";
+
+/** Same portraits + welcome video as the home landing. */
 export default function MaatjesPage() {
   return (
     <AppShell compact>
-      <CompanionPicker />
+      <HomeCharacterLanding />
     </AppShell>
   );
 }
