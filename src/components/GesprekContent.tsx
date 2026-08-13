@@ -2,21 +2,16 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { CompanionVoiceSession } from "@/components/CompanionVoiceSession";
 import { CompanionWelcomeIntro } from "@/components/CompanionWelcomeIntro";
 import { LiveCompanionFace } from "@/components/LiveCompanionFace";
+import { VoiceSessionPanel } from "@/components/VoiceSessionPanel";
+import { useVoiceSession } from "@/hooks/useVoiceSession";
 import { useI18n } from "@/i18n/LanguageProvider";
-import { getCompanion, type CompanionId } from "@/lib/companions";
+import {
+  type CompanionId,
+  getCompanion,
+} from "@/lib/companions";
 import { silenceHmMedia } from "@/lib/hmMedia";
-import type { VoiceIdentityId } from "@/lib/voice/types";
-
-type VoicePhase =
-  | "idle"
-  | "starting"
-  | "listening"
-  | "thinking"
-  | "speaking"
-  | "error";
 
 type Props = {
   companionId: CompanionId;
@@ -31,9 +26,10 @@ export function GesprekContent({
 }: Props) {
   const { t } = useI18n();
   const [introDone, setIntroDone] = useState(false);
-  const [phase, setPhase] = useState<VoicePhase>("idle");
+  const session = useVoiceSession(companionId);
+  const { startContinuousChat, ui } = session;
   const crop = getCompanion(companionId)?.portraitCrop ?? null;
-  const liveOn = phase === "listening" || phase === "speaking" || phase === "starting";
+  const liveOn = ui.micLive || ui.phase === "speaking" || ui.starting;
 
   const beginConversation = useCallback(() => {
     try {
@@ -43,7 +39,8 @@ export function GesprekContent({
     }
     silenceHmMedia();
     setIntroDone(true);
-  }, []);
+    void startContinuousChat();
+  }, [startContinuousChat]);
 
   if (!introDone) {
     return (
@@ -58,6 +55,7 @@ export function GesprekContent({
 
   return (
     <section className="hm-card mx-auto w-full space-y-2 overflow-hidden px-2 pb-3 pt-2 sm:px-3">
+      {/* Living character — face first, not a chatboard */}
       <LiveCompanionFace
         companionId={companionId}
         companionName={companionName}
@@ -65,19 +63,18 @@ export function GesprekContent({
         portraitCrop={crop}
         liveCharacter
         expanded
-        speaking={phase === "speaking"}
-        listening={phase === "listening" || phase === "thinking"}
+        speaking={ui.phase === "speaking"}
+        listening={ui.micLive && ui.phase !== "speaking"}
+        speechLevel={ui.speechLevel}
       />
 
       <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-2">
-        <CompanionVoiceSession
-          identityId={companionId as VoiceIdentityId}
-          skipWelcome
+        <VoiceSessionPanel
+          companionName={companionName}
+          session={session}
+          compact
           hidePortrait
-          onPhaseChange={setPhase}
-          onBack={() => {
-            window.location.href = "/maatjes";
-          }}
+          liveCharacter
         />
 
         <Link

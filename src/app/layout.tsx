@@ -1,59 +1,37 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { Geist } from "next/font/google";
+import { Fraunces, Source_Sans_3 } from "next/font/google";
+import { PreferLocalhostForMic } from "@/components/PreferLocalhostForMic";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
-import { HomeCompanionProvider } from "@/context/HomeCompanionContext";
-import { LanguageProvider } from "@/context/LanguageContext";
-import { HartMaatjeSiteShell } from "@/components/HartMaatjeSiteShell";
-import {
-  DEFAULT_APP_LANG,
-  LANG_COOKIE_NAME,
-  parseAppLang,
-} from "@/lib/languages";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://hartmaatje.nl";
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: "HartMaatje — Uw rustige maatje",
+  title: {
+    absolute: "HartMaatje",
+    default: "HartMaatje",
+  },
+  applicationName: "HartMaatje",
   description:
-    "HartMaatje is een warm maatje voor ouderen — iemand om mee te praten, ook als het eenzaam voelt. Rustig praten, luisteren, herinneringen delen en dagelijks even contact.",
+    "HartMaatje is your calm companion at home / uw warme maatje in huis.",
   icons: {
     icon: [{ url: "/logo.png", type: "image/png" }],
     apple: "/logo.png",
-    shortcut: "/logo.png",
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "HartMaatje — Uw rustige maatje",
-    description:
-      "HartMaatje is een warm maatje voor ouderen. Rustig praten, luisteren en dagelijks even contact.",
-    url: siteUrl,
+    title: "HartMaatje",
     siteName: "HartMaatje",
-    locale: "nl_NL",
-    type: "website",
-    images: [
-      {
-        url: "/logo.png",
-        width: 512,
-        height: 512,
-        alt: "HartMaatje logo",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary",
-    title: "HartMaatje — Uw rustige maatje",
-    description:
-      "HartMaatje is een warm maatje voor ouderen.",
-    images: ["/logo.png"],
   },
 };
 
@@ -64,28 +42,28 @@ export const viewport = {
   themeColor: "#05381F",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const initialLang =
-    parseAppLang(cookieStore.get(LANG_COOKIE_NAME)?.value) ?? DEFAULT_APP_LANG;
-
   return (
     <html
-      lang={initialLang}
-      className={`${geistSans.variable} h-full antialiased`}
+      lang="nl-NL"
+      suppressHydrationWarning
+      className={`${sourceSans.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full">
-        <AuthProvider>
-          <LanguageProvider initialLang={initialLang}>
-            <HomeCompanionProvider>
-              <HartMaatjeSiteShell>{children}</HartMaatjeSiteShell>
-            </HomeCompanionProvider>
-          </LanguageProvider>
-        </AuthProvider>
+      <head>
+        <title>HartMaatje</title>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.title="HartMaatje";`,
+          }}
+        />
+      </head>
+      <body className="min-h-full font-sans">
+        <PreferLocalhostForMic />
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
