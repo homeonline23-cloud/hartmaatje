@@ -51,7 +51,7 @@ function PrivacyPolicyVideo({ videoSrc }: { videoSrc: string }) {
         ref={videoRef}
         key={videoSrc}
         src={videoSrc}
-        poster="/hartmaatje-cover.png"
+        poster="/images/privacy-policy-poster.jpg"
         className={`h-full w-full object-cover ${showPlay ? "opacity-0" : "opacity-100"}`}
         controls={!showPlay}
         playsInline
@@ -72,7 +72,7 @@ function PrivacyPolicyVideo({ videoSrc }: { videoSrc: string }) {
       {showPlay ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src="/hartmaatje-cover.png"
+          src="/images/privacy-policy-poster.jpg"
           alt=""
           className="pointer-events-none absolute inset-0 z-[5] h-full w-full object-cover"
         />
