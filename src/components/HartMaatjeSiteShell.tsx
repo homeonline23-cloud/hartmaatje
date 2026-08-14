@@ -18,6 +18,7 @@ const ROOM_PATHS = [
   "/contact",
   "/cookies",
   "/instellingen",
+  "/mic-test",
   "/geheugen",
 ];
 
