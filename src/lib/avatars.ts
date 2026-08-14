@@ -27,7 +27,7 @@ const WELCOME_VIDEO_VERSIONS: Partial<Record<VoiceIdentityId, number>> = {
 /** Cache-bust na vervanging van een portret — verhoog het versienummer. */
 const AVATAR_PORTRAIT_VERSIONS: Partial<Record<VoiceIdentityId, number>> = {
   peter: 2,
-  fenna: 2,
+  fenna: 6,
 };
 
 /** Crop Meta-watermerk uit hoek van AI-gegenereerde portretten. */

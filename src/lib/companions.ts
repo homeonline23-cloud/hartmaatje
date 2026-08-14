@@ -14,7 +14,7 @@ export const companions: readonly Companion[] = [
   {
     id: "fenna",
     name: "Fenna",
-    portrait: "/avatars/fenna/portrait.png?v=5",
+    portrait: "/avatars/fenna/portrait.png?v=6",
     welcomeVideo: "/avatars/fenna/welcome.mp4?v=4",
     portraitCrop: { scale: "scale-[1.28]", position: "object-[52%_20%]" },
   },
