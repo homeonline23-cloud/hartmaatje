@@ -156,17 +156,47 @@ export function StoryReader() {
     audioRef.current = null;
     videoRef.current?.pause();
 
-    const candidates = companionVideoPaths(story.id, companionId, lang);
-    candidatesRef.current = candidates;
+    const mp3 = companionAudioPath(story.id, companionId, lang);
+    const visuals = [
+      ...companionVideoPaths(story.id, companionId, lang),
+      ...companionVideoPaths(story.id, companionId, "nl"),
+    ];
+
+    const audio = createTrackedAudio("story");
+    audio.preload = "auto";
+    audio.volume = Math.max(0.45, getVoiceVolume());
+    audio.src = mp3;
+    audioRef.current = audio;
+    candidatesRef.current = visuals;
     candidateIndexRef.current = 0;
-    mp3SrcRef.current = companionAudioPath(story.id, companionId, lang);
-    visualFallbackRef.current = companionVideoPaths(story.id, companionId, "nl");
-    mp3ModeRef.current = false;
+    mp3SrcRef.current = mp3;
+    visualFallbackRef.current = visuals;
+    mp3ModeRef.current = true;
     playingRef.current = true;
     setReading(true);
-    setStoryWithAudio(true);
-    setActiveVideoSrc(candidates[0] ?? visualFallbackRef.current[0] ?? null);
+    setStoryWithAudio(false);
+    setActiveVideoSrc(visuals[0] ?? null);
     setStatus(t.stories.reading);
+
+    audio.onended = () => {
+      playingRef.current = false;
+      setReading(false);
+      setStatus(null);
+      setActiveVideoSrc(null);
+      setStoryWithAudio(false);
+    };
+    audio.onerror = () => {
+      setStatus(t.stories.voiceUnavailable);
+      playingRef.current = false;
+      setReading(false);
+      setActiveVideoSrc(null);
+    };
+    void audio.play().catch(() => {
+      setStatus(t.stories.voiceUnavailable);
+      playingRef.current = false;
+      setReading(false);
+      setActiveVideoSrc(null);
+    });
   };
 
   useEffect(() => {
@@ -174,54 +204,14 @@ export function StoryReader() {
     let cancelled = false;
     let v: HTMLVideoElement | null = null;
 
-    const finish = () => {
-      if (cancelled) return;
-      playingRef.current = false;
-      setReading(false);
-      setStatus(null);
-      setActiveVideoSrc(null);
-      setStoryWithAudio(false);
-    };
-
-    const onEnded = () => {
-      if (mp3ModeRef.current) return;
-      finish();
-    };
     const onError = () => {
-      if (cancelled || mp3ModeRef.current) return;
+      if (cancelled) return;
       const next = candidateIndexRef.current + 1;
       const src = candidatesRef.current[next];
       if (src && playingRef.current) {
         candidateIndexRef.current = next;
         setActiveVideoSrc(src);
-        return;
       }
-
-      const mp3 = mp3SrcRef.current;
-      const visual = visualFallbackRef.current[0];
-      if (mp3 && playingRef.current && !audioRef.current) {
-        mp3ModeRef.current = true;
-        const audio = createTrackedAudio("story");
-        audio.preload = "auto";
-        audio.volume = Math.max(0.45, getVoiceVolume());
-        audio.src = mp3;
-        audioRef.current = audio;
-        audio.onended = () => finish();
-        audio.onerror = () => {
-          setStatus(t.stories.voiceUnavailable);
-          finish();
-        };
-        setStoryWithAudio(false);
-        if (visual && visual !== activeVideoSrc) setActiveVideoSrc(visual);
-        void audio.play().catch(() => {
-          setStatus(t.stories.voiceUnavailable);
-          finish();
-        });
-        return;
-      }
-
-      setStatus(t.stories.voiceUnavailable);
-      finish();
     };
 
     const start = () => {
@@ -231,29 +221,24 @@ export function StoryReader() {
         requestAnimationFrame(start);
         return;
       }
-      const useMp3 = mp3ModeRef.current;
-      v.muted = useMp3;
-      v.defaultMuted = useMp3;
-      v.loop = useMp3;
-      v.volume = Math.max(0.45, getVoiceVolume());
+      v.muted = true;
+      v.defaultMuted = true;
+      v.volume = 0;
+      v.loop = true;
       if (v.getAttribute("src") !== activeVideoSrc) {
         v.src = activeVideoSrc;
       }
-      v.addEventListener("ended", onEnded);
       v.addEventListener("error", onError);
-      void v.play().catch(() => {
-        if (!useMp3) onError();
-      });
+      void v.play().catch(onError);
     };
 
     start();
 
     return () => {
       cancelled = true;
-      v?.removeEventListener("ended", onEnded);
       v?.removeEventListener("error", onError);
     };
-  }, [reading, activeVideoSrc, t.stories.voiceUnavailable]);
+  }, [reading, activeVideoSrc]);
 
   return (
     <div className="space-y-3 pb-8">
@@ -370,7 +355,7 @@ export function StoryReader() {
               storyVideoSrc={activeVideoSrc}
               storyVideoRef={videoRef}
               storyVideoWithAudio={storyWithAudio}
-              expanded={storyWithAudio && reading}
+              expanded={reading && Boolean(activeVideoSrc)}
               compact={!storyWithAudio}
             />
 

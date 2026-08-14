@@ -148,7 +148,7 @@ export function LiveCompanionFace({
             src={storyVideoSrc ?? undefined}
             muted={!storyVideoWithAudio}
             playsInline
-            loop={false}
+            loop={!storyVideoWithAudio}
             preload="auto"
             controls={showStoryVideo && storyVideoWithAudio}
           />
