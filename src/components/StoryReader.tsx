@@ -7,7 +7,7 @@ import { companions, type CompanionId } from "@/lib/companions";
 import { STORIES, getStory, type StoryId } from "@/lib/stories";
 import { getStoryText } from "@/lib/storyText";
 import { getVoiceVolume } from "@/lib/voiceVolume";
-import { storyVideoPath } from "@/lib/mediaByLang";
+import { companionStoryDubPath, storyVideoPath } from "@/lib/mediaByLang";
 import { createTrackedAudio, silenceHmMedia } from "@/lib/hmMedia";
 import { useI18n } from "@/i18n/LanguageProvider";
 import type { AppLang } from "@/i18n/config";
@@ -40,6 +40,18 @@ function StopIcon({ className = "" }: { className?: string }) {
 
 const STORY_AUDIO_VERSION_FALLBACK = "selfdub-1";
 
+async function mediaExists(src: string): Promise<boolean> {
+  try {
+    const head = await fetch(src, { method: "HEAD", cache: "no-store" });
+    if (!head.ok) return false;
+    const len = Number(head.headers.get("content-length") || "0");
+    if (len > 0 && len < 4000) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function dubbedSrc(
   storyId: StoryId,
   lang: AppLang,
@@ -60,6 +72,7 @@ export function StoryReader() {
   const [reading, setReading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [activeVideoSrc, setActiveVideoSrc] = useState<string | null>(null);
+  const [storyWithAudio, setStoryWithAudio] = useState(false);
   const [audioCacheV, setAudioCacheV] = useState(STORY_AUDIO_VERSION_FALLBACK);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -102,6 +115,7 @@ export function StoryReader() {
     setReading(false);
     setStatus(null);
     setActiveVideoSrc(null);
+    setStoryWithAudio(false);
   };
 
   // Kill leftover audio when opening Verhalen; Stop must always work
@@ -154,6 +168,38 @@ export function StoryReader() {
     playingRef.current = true;
     setReading(true);
     setStatus(t.stories.preparingVoice);
+
+    const dubSrc = companionStoryDubPath(story.id, companionId, lang);
+    if (await mediaExists(dubSrc)) {
+      setStoryWithAudio(true);
+      setActiveVideoSrc(dubSrc);
+      setStatus(t.stories.reading);
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      const dubbed = videoRef.current;
+      if (dubbed && playingRef.current) {
+        dubbed.currentTime = 0;
+        await new Promise<void>((resolve) => {
+          const done = () => {
+            dubbed.onended = null;
+            dubbed.onerror = null;
+            resolve();
+          };
+          dubbed.onended = done;
+          dubbed.onerror = done;
+          void dubbed.play().catch(done);
+        });
+      }
+      if (playingRef.current) {
+        playingRef.current = false;
+        setReading(false);
+        setStatus(null);
+        setActiveVideoSrc(null);
+        setStoryWithAudio(false);
+      }
+      return;
+    }
 
     // Never fall back to another language — seniors expect the selected language
     const tryLangs: AppLang[] = [lang];
@@ -373,7 +419,9 @@ export function StoryReader() {
               speaking={reading}
               storyVideoSrc={activeVideoSrc}
               storyVideoRef={videoRef}
-              compact
+              storyVideoWithAudio={storyWithAudio}
+              expanded={storyWithAudio && reading}
+              compact={!storyWithAudio}
             />
 
             <div className="flex flex-col justify-center gap-2.5 px-3 py-3">

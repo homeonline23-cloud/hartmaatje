@@ -25,7 +25,7 @@ const WELCOME_AUDIO_LANGS: Record<CompanionId, readonly AppLang[]> = {
 const STORY_AUDIO_LANGS: readonly AppLang[] = ALL_AUDIO_LANGS;
 
 /** Cache-bust when language packs are refreshed. */
-const MEDIA_VERSION = "v18";
+const MEDIA_VERSION = "v19";
 
 export type LangMedia = {
   /** Video file actually played */
@@ -78,6 +78,15 @@ function introductionVideoDubPath(lang: AppLang): string {
  */
 export function storyVideoPath(storyId: string, lang: AppLang): string {
   return `/videos/stories/${storyId}.${lang}.mp4?${MEDIA_VERSION}`;
+}
+
+/** Full dubbed story film for one companion + language (picture + voice). */
+export function companionStoryDubPath(
+  storyId: string,
+  companionId: CompanionId,
+  lang: AppLang
+): string {
+  return `/videos/stories/${storyId}/${companionId}.${lang}.mp4?${MEDIA_VERSION}`;
 }
 
 function hasWelcomeAudio(companionId: CompanionId, lang: AppLang): boolean {
