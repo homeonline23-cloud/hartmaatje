@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BackToSettingsLink } from "@/components/BackToSettingsLink";
 import { MicGlyph } from "@/components/MicWindow";
 import {
   micErrorText,
@@ -165,7 +166,14 @@ export function MicTestPanel() {
 
   return (
     <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-[#e8dfd0] bg-white/90 p-5 text-center text-[#3f6339] shadow-md">
-      <h1 className="text-2xl font-bold text-[#3f6339]">Microfoon-test</h1>
+      <header className="relative flex items-start justify-between gap-3 text-left">
+        <h1 className="min-w-0 flex-1 text-center text-2xl font-bold text-[#3f6339]">
+          Microfoon-test
+        </h1>
+        <div className="shrink-0">
+          <BackToSettingsLink />
+        </div>
+      </header>
       <p className="text-base leading-relaxed">
         Alleen in <strong>Chrome of Edge</strong> op{" "}
         <strong>hartmaatje.app</strong> — niet in het Cursor-venster.

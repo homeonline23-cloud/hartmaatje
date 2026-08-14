@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { companions, type CompanionId } from "@/lib/companions";
 import { STORIES, type StoryId } from "@/lib/stories";
 import { APP_LANGS, type AppLang } from "@/i18n/config";
+import { BackToSettingsLink } from "@/components/BackToSettingsLink";
 import { useI18n } from "@/i18n/LanguageProvider";
 
 type LangJobState = {
@@ -181,13 +182,20 @@ export function DubberKamer() {
 
   return (
     <div className="hm-card mx-auto w-full max-w-3xl overflow-hidden">
-      <div className="border-b border-[#e8dfd0]/55 px-4 py-3 text-center">
-        <h2 className="text-xl font-bold leading-tight text-[#3f6339] sm:text-2xl">
-          {d.title}
-        </h2>
-        <p className="mt-1 text-sm font-medium leading-snug text-[#3f6339] sm:text-base">
-          {d.subtitle}
-        </p>
+      <div className="border-b border-[#e8dfd0]/55 px-4 py-3">
+        <header className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 text-center">
+            <h2 className="text-xl font-bold leading-tight text-[#3f6339] sm:text-2xl">
+              {d.title}
+            </h2>
+            <p className="mt-1 text-sm font-medium leading-snug text-[#3f6339] sm:text-base">
+              {d.subtitle}
+            </p>
+          </div>
+          <div className="shrink-0">
+            <BackToSettingsLink />
+          </div>
+        </header>
         {apiOk === false ? (
           <p className="mt-2 text-sm font-semibold text-red-700">{d.offline}</p>
         ) : null}
