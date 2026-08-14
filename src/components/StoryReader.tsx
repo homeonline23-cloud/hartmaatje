@@ -160,6 +160,8 @@ export function StoryReader() {
     const visuals = [
       ...companionVideoPaths(story.id, companionId, lang),
       ...companionVideoPaths(story.id, companionId, "nl"),
+      `/avatars/${companionId}/talk.mp4`,
+      `/avatars/${companionId}/welcome.mp4`,
     ];
 
     const audio = createTrackedAudio("story");
