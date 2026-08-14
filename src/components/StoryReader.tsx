@@ -8,7 +8,7 @@ import { STORIES, getStory, type StoryId } from "@/lib/stories";
 import { getStoryText } from "@/lib/storyText";
 import { getVoiceVolume } from "@/lib/voiceVolume";
 import { companionStoryDubPath, storyVideoPath } from "@/lib/mediaByLang";
-import { createTrackedAudio, silenceHmMedia } from "@/lib/hmMedia";
+import { silenceHmMedia } from "@/lib/hmMedia";
 import { useI18n } from "@/i18n/LanguageProvider";
 import type { AppLang } from "@/i18n/config";
 
@@ -38,28 +38,34 @@ function StopIcon({ className = "" }: { className?: string }) {
   );
 }
 
-const STORY_AUDIO_VERSION_FALLBACK = "selfdub-1";
+const COMPANION_ORDER: CompanionId[] = ["fenna", "maarten", "peter", "colette"];
 
-async function mediaExists(src: string): Promise<boolean> {
-  try {
-    const head = await fetch(src, { method: "HEAD", cache: "no-store" });
-    if (!head.ok) return false;
-    const len = Number(head.headers.get("content-length") || "0");
-    if (len > 0 && len < 4000) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function dubbedSrc(
+function listStoryVideoCandidates(
   storyId: StoryId,
-  lang: AppLang,
   companionId: CompanionId,
-  cacheV: string
-): string {
-  // Same companion voice files you install from Video dubben → Verhalen
-  return `/stories/${storyId}/${lang}/${companionId}.mp3?v=${cacheV}`;
+  lang: AppLang
+): string[] {
+  const ids = [
+    companionId,
+    ...COMPANION_ORDER.filter((id) => id !== companionId),
+  ];
+  const langs: AppLang[] = lang === "nl" ? ["nl"] : [lang, "nl"];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const L of langs) {
+    for (const id of ids) {
+      const src = companionStoryDubPath(storyId, id, L);
+      if (seen.has(src)) continue;
+      seen.add(src);
+      out.push(src);
+    }
+    const shared = storyVideoPath(storyId, L);
+    if (!seen.has(shared)) {
+      seen.add(shared);
+      out.push(shared);
+    }
+  }
+  return out;
 }
 
 export function StoryReader() {
@@ -73,23 +79,11 @@ export function StoryReader() {
   const [status, setStatus] = useState<string | null>(null);
   const [activeVideoSrc, setActiveVideoSrc] = useState<string | null>(null);
   const [storyWithAudio, setStoryWithAudio] = useState(false);
-  const [audioCacheV, setAudioCacheV] = useState(STORY_AUDIO_VERSION_FALLBACK);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playingRef = useRef(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/stories/cache-bust.json", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { v?: string } | null) => {
-        if (!cancelled && j?.v) setAudioCacheV(String(j.v));
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const candidatesRef = useRef<string[]>([]);
+  const candidateIndexRef = useRef(0);
 
   const story = getStory(storyId);
   const text = story ? getStoryText(story, lang) : null;
@@ -155,7 +149,7 @@ export function StoryReader() {
     setStoryId(id);
   };
 
-  const readAloud = async () => {
+  const readAloud = () => {
     if (!companionId || !companion) {
       setStatus(t.stories.pickCompanion);
       return;
@@ -164,150 +158,75 @@ export function StoryReader() {
       setStatus(t.stories.comingSoon);
       return;
     }
-    stopReading();
+
+    silenceHmMedia("story");
+    audioRef.current = null;
+    videoRef.current?.pause();
+
+    const candidates = listStoryVideoCandidates(story.id, companionId, lang);
+    candidatesRef.current = candidates;
+    candidateIndexRef.current = 0;
     playingRef.current = true;
     setReading(true);
-    setStatus(t.stories.preparingVoice);
+    setStoryWithAudio(true);
+    setActiveVideoSrc(candidates[0] ?? null);
+    setStatus(t.stories.reading);
+  };
 
-    const dubSrc = companionStoryDubPath(story.id, companionId, lang);
-    if (await mediaExists(dubSrc)) {
-      setStoryWithAudio(true);
-      setActiveVideoSrc(dubSrc);
-      setStatus(t.stories.reading);
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      );
-      const dubbed = videoRef.current;
-      if (dubbed && playingRef.current) {
-        dubbed.currentTime = 0;
-        await new Promise<void>((resolve) => {
-          const done = () => {
-            dubbed.onended = null;
-            dubbed.onerror = null;
-            resolve();
-          };
-          dubbed.onended = done;
-          dubbed.onerror = done;
-          void dubbed.play().catch(done);
-        });
-      }
-      if (playingRef.current) {
-        playingRef.current = false;
-        setReading(false);
-        setStatus(null);
-        setActiveVideoSrc(null);
-        setStoryWithAudio(false);
-      }
-      return;
-    }
+  useEffect(() => {
+    if (!reading || !activeVideoSrc) return;
+    let cancelled = false;
+    let v: HTMLVideoElement | null = null;
 
-    // Never fall back to another language — seniors expect the selected language
-    const tryLangs: AppLang[] = [lang];
-    let audio: HTMLAudioElement | null = null;
-    let usedLang: AppLang | null = null;
-
-    for (const L of tryLangs) {
-      const src = dubbedSrc(story.id, L, companionId, audioCacheV);
-      // Confirm file exists first (avoids false Audio() errors on fresh dubs)
-      try {
-        const head = await fetch(src, { method: "HEAD", cache: "no-store" });
-        if (!head.ok) continue;
-        const len = Number(head.headers.get("content-length") || "0");
-        if (len > 0 && len < 4000) continue;
-      } catch {
-        continue;
-      }
-
-      const candidate = createTrackedAudio("story");
-      candidate.preload = "auto";
-      candidate.volume = getVoiceVolume();
-      const ok = await new Promise<boolean>((resolve) => {
-        let settled = false;
-        const done = (value: boolean) => {
-          if (settled) return;
-          settled = true;
-          candidate.onloadeddata = null;
-          candidate.oncanplay = null;
-          candidate.onerror = null;
-          window.clearTimeout(timer);
-          resolve(value);
-        };
-        const timer = window.setTimeout(() => {
-          done(candidate.readyState >= 2);
-        }, 10000);
-        candidate.onloadeddata = () => done(true);
-        candidate.oncanplay = () => done(true);
-        candidate.onerror = () => done(false);
-        candidate.src = src;
-        candidate.load();
-        if (candidate.readyState >= 2) done(true);
-      });
-      if (ok) {
-        audio = candidate;
-        usedLang = L;
-        break;
-      }
-    }
-
-    if (!audio || !playingRef.current) {
-      setStatus(t.stories.voiceUnavailable);
-      setReading(false);
-      playingRef.current = false;
-      return;
-    }
-
-    audioRef.current = audio;
-    setStatus(
-      usedLang && usedLang !== lang
-        ? `${t.stories.reading} (${usedLang.toUpperCase()})`
-        : t.stories.reading
-    );
-
-    // Optional muted story video, reused across every companion — check it
-    // exists before switching the face away from the static portrait.
-    let videoSrc: string | null = null;
-    if (usedLang) {
-      const candidateSrc = storyVideoPath(story.id, usedLang);
-      try {
-        const head = await fetch(candidateSrc, { method: "HEAD", cache: "no-store" });
-        if (head.ok) videoSrc = candidateSrc;
-      } catch {
-        videoSrc = null;
-      }
-    }
-    if (videoSrc && playingRef.current) {
-      setActiveVideoSrc(videoSrc);
-      // Let the <video> element mount before we try to play it.
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      );
-      const v = videoRef.current;
-      if (v) {
-        v.currentTime = 0;
-        void v.play().catch(() => {});
-      }
-    }
-
-    await new Promise<void>((resolve) => {
-      audio!.onended = () => resolve();
-      audio!.onerror = () => resolve();
-      void audio!.play().catch(() => resolve());
-    });
-
-    const v = videoRef.current;
-    if (v) {
-      v.pause();
-      v.currentTime = 0;
-    }
-
-    if (audioRef.current === audio) {
+    const finish = () => {
+      if (cancelled) return;
       playingRef.current = false;
       setReading(false);
       setStatus(null);
       setActiveVideoSrc(null);
-      audioRef.current = null;
-    }
-  };
+      setStoryWithAudio(false);
+    };
+
+    const onEnded = () => finish();
+    const onError = () => {
+      if (cancelled) return;
+      const next = candidateIndexRef.current + 1;
+      const src = candidatesRef.current[next];
+      if (src && playingRef.current) {
+        candidateIndexRef.current = next;
+        setActiveVideoSrc(src);
+        return;
+      }
+      setStatus(t.stories.voiceUnavailable);
+      finish();
+    };
+
+    const start = () => {
+      if (cancelled) return;
+      v = videoRef.current;
+      if (!v) {
+        requestAnimationFrame(start);
+        return;
+      }
+      v.muted = false;
+      v.defaultMuted = false;
+      v.volume = Math.max(0.45, getVoiceVolume());
+      if (v.getAttribute("src") !== activeVideoSrc) {
+        v.src = activeVideoSrc;
+      }
+      v.addEventListener("ended", onEnded);
+      v.addEventListener("error", onError);
+      void v.play().catch(onError);
+    };
+
+    start();
+
+    return () => {
+      cancelled = true;
+      v?.removeEventListener("ended", onEnded);
+      v?.removeEventListener("error", onError);
+    };
+  }, [reading, activeVideoSrc, t.stories.voiceUnavailable]);
 
   return (
     <div className="space-y-3 pb-8">
@@ -410,7 +329,11 @@ export function StoryReader() {
 
       {story && text && companion ? (
         <section className="hm-card mx-auto w-full overflow-hidden">
-          <div className="grid grid-cols-1 items-stretch md:grid-cols-2">
+          <div
+            className={`grid grid-cols-1 items-stretch ${
+              reading && activeVideoSrc ? "" : "md:grid-cols-2"
+            }`}
+          >
             <LiveCompanionFace
               companionId={companion.id}
               companionName={companion.name}

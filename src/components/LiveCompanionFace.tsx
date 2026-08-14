@@ -67,8 +67,7 @@ export function LiveCompanionFace({
     : listening
       ? "listening"
       : "idle";
-  const showStoryVideo =
-    isTalking && Boolean(storyVideoSrc) && storyVideoWithAudio;
+  const showStoryVideo = Boolean(storyVideoSrc);
   const liveClip = !showStoryVideo && liveCharacter ? faceClip(companionId, mode) : null;
   const src =
     portrait?.trim() || `/avatars/${companionId}/portrait.png`;
@@ -141,19 +140,19 @@ export function LiveCompanionFace({
         scoopRadius={expanded ? 0.18 : 0.26}
       >
         <div className="relative h-full w-full overflow-hidden bg-transparent">
-          {showStoryVideo ? (
-            <video
-              key={storyVideoSrc ?? "story-video"}
-              ref={storyVideoRef}
-              className={`h-full w-full ${cropClass}`}
-              src={storyVideoSrc ?? undefined}
-              muted={false}
-              playsInline
-              loop={false}
-              preload="auto"
-              controls={false}
-            />
-          ) : liveClip ? (
+          <video
+            ref={storyVideoRef}
+            className={`absolute inset-0 h-full w-full object-cover object-center ${
+              showStoryVideo ? "z-10" : "hidden"
+            }`}
+            src={storyVideoSrc ?? undefined}
+            muted={!storyVideoWithAudio}
+            playsInline
+            loop={false}
+            preload="auto"
+            controls={showStoryVideo && storyVideoWithAudio}
+          />
+          {!showStoryVideo && liveClip ? (
             <video
               key={`live-${companionId}-${mode}`}
               ref={liveVideoRef}
@@ -176,7 +175,8 @@ export function LiveCompanionFace({
                 }
               }}
             />
-          ) : (
+          ) : null}
+          {!showStoryVideo && !liveClip ? (
             <Image
               src={src}
               alt={companionName}
@@ -188,7 +188,7 @@ export function LiveCompanionFace({
               }`}
               sizes="(max-width: 768px) 100vw, 720px"
             />
-          )}
+          ) : null}
         </div>
       </WelcomeVideoFrame>
       </div>
