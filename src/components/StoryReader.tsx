@@ -7,7 +7,7 @@ import { companions, type CompanionId } from "@/lib/companions";
 import { STORIES, getStory, type StoryId } from "@/lib/stories";
 import { getStoryText } from "@/lib/storyText";
 import { getVoiceVolume } from "@/lib/voiceVolume";
-import { companionStoryDubPath } from "@/lib/mediaByLang";
+import { MEDIA_VERSION, companionStoryDubPath } from "@/lib/mediaByLang";
 import { createTrackedAudio, silenceHmMedia } from "@/lib/hmMedia";
 import { useI18n } from "@/i18n/LanguageProvider";
 import type { AppLang } from "@/i18n/config";
@@ -54,7 +54,7 @@ function companionAudioPath(
   companionId: CompanionId,
   lang: AppLang
 ): string {
-  return `/stories/${storyId}/${lang}/${companionId}.mp3`;
+  return `/stories/${storyId}/${lang}/${companionId}.mp3?${MEDIA_VERSION}`;
 }
 
 export function StoryReader() {
