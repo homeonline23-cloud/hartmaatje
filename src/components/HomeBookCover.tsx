@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Cormorant_Garamond } from "next/font/google";
 import { DigitalClock } from "@/components/DigitalClock";
 import { FrontpageIntroPlayer } from "@/components/FrontpageIntroPlayer";
@@ -89,6 +90,13 @@ export function HomeBookCover({ onOpen }: HomeBookCoverProps) {
                 &larr;
               </span>
             </button>
+
+            <Link
+              href="/prijzen"
+              className={`inline-flex w-full items-center justify-center ${coverCtlH} px-8 text-lg sm:text-xl ${startBtnClass}`}
+            >
+              {t.nav.pricing}
+            </Link>
 
             <p
               className={`${coverFont.className} mt-2 w-full text-center text-[1.15rem] font-normal italic leading-[1.4] tracking-[0.03em] text-white/88 drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] sm:text-[1.3rem] sm:leading-[1.35]`}

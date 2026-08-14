@@ -14,15 +14,15 @@ const en: PricingContent = {
 };
 
 const de: PricingContent = {
-  title: "Business Information and Future Growth.",
+  title: "Geschäftsinformationen und zukünftiges Wachstum.",
 };
 
 const fr: PricingContent = {
-  title: "Business Information and Future Growth.",
+  title: "Informations sur l'entreprise et croissance future.",
 };
 
 const es: PricingContent = {
-  title: "Business Information and Future Growth.",
+  title: "Información empresarial y crecimiento futuro.",
 };
 
 const byLang: Record<AppLang, PricingContent> = {
