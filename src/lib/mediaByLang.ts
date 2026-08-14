@@ -25,7 +25,7 @@ const WELCOME_AUDIO_LANGS: Record<CompanionId, readonly AppLang[]> = {
 const STORY_AUDIO_LANGS: readonly AppLang[] = ALL_AUDIO_LANGS;
 
 /** Cache-bust when language packs are refreshed. */
-const MEDIA_VERSION = "v19";
+const MEDIA_VERSION = "v20";
 
 export type LangMedia = {
   /** Video file actually played */

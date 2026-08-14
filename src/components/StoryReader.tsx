@@ -7,8 +7,8 @@ import { companions, type CompanionId } from "@/lib/companions";
 import { STORIES, getStory, type StoryId } from "@/lib/stories";
 import { getStoryText } from "@/lib/storyText";
 import { getVoiceVolume } from "@/lib/voiceVolume";
-import { companionStoryDubPath, storyVideoPath } from "@/lib/mediaByLang";
-import { silenceHmMedia } from "@/lib/hmMedia";
+import { companionStoryDubPath } from "@/lib/mediaByLang";
+import { createTrackedAudio, silenceHmMedia } from "@/lib/hmMedia";
 import { useI18n } from "@/i18n/LanguageProvider";
 import type { AppLang } from "@/i18n/config";
 
@@ -38,34 +38,23 @@ function StopIcon({ className = "" }: { className?: string }) {
   );
 }
 
-const COMPANION_ORDER: CompanionId[] = ["fenna", "maarten", "peter", "colette"];
-
-function listStoryVideoCandidates(
+function companionVideoPaths(
   storyId: StoryId,
   companionId: CompanionId,
   lang: AppLang
 ): string[] {
-  const ids = [
-    companionId,
-    ...COMPANION_ORDER.filter((id) => id !== companionId),
+  return [
+    `/stories/${storyId}/${lang}/${companionId}.mp4`,
+    companionStoryDubPath(storyId, companionId, lang),
   ];
-  const langs: AppLang[] = lang === "nl" ? ["nl"] : [lang, "nl"];
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const L of langs) {
-    for (const id of ids) {
-      const src = companionStoryDubPath(storyId, id, L);
-      if (seen.has(src)) continue;
-      seen.add(src);
-      out.push(src);
-    }
-    const shared = storyVideoPath(storyId, L);
-    if (!seen.has(shared)) {
-      seen.add(shared);
-      out.push(shared);
-    }
-  }
-  return out;
+}
+
+function companionAudioPath(
+  storyId: StoryId,
+  companionId: CompanionId,
+  lang: AppLang
+): string {
+  return `/stories/${storyId}/${lang}/${companionId}.mp3`;
 }
 
 export function StoryReader() {
@@ -84,6 +73,9 @@ export function StoryReader() {
   const playingRef = useRef(false);
   const candidatesRef = useRef<string[]>([]);
   const candidateIndexRef = useRef(0);
+  const mp3SrcRef = useRef<string | null>(null);
+  const visualFallbackRef = useRef<string[]>([]);
+  const mp3ModeRef = useRef(false);
 
   const story = getStory(storyId);
   const text = story ? getStoryText(story, lang) : null;
@@ -110,6 +102,7 @@ export function StoryReader() {
     setStatus(null);
     setActiveVideoSrc(null);
     setStoryWithAudio(false);
+    mp3ModeRef.current = false;
   };
 
   // Kill leftover audio when opening Verhalen; Stop must always work
@@ -163,13 +156,16 @@ export function StoryReader() {
     audioRef.current = null;
     videoRef.current?.pause();
 
-    const candidates = listStoryVideoCandidates(story.id, companionId, lang);
+    const candidates = companionVideoPaths(story.id, companionId, lang);
     candidatesRef.current = candidates;
     candidateIndexRef.current = 0;
+    mp3SrcRef.current = companionAudioPath(story.id, companionId, lang);
+    visualFallbackRef.current = companionVideoPaths(story.id, companionId, "nl");
+    mp3ModeRef.current = false;
     playingRef.current = true;
     setReading(true);
     setStoryWithAudio(true);
-    setActiveVideoSrc(candidates[0] ?? null);
+    setActiveVideoSrc(candidates[0] ?? visualFallbackRef.current[0] ?? null);
     setStatus(t.stories.reading);
   };
 
@@ -187,9 +183,12 @@ export function StoryReader() {
       setStoryWithAudio(false);
     };
 
-    const onEnded = () => finish();
+    const onEnded = () => {
+      if (mp3ModeRef.current) return;
+      finish();
+    };
     const onError = () => {
-      if (cancelled) return;
+      if (cancelled || mp3ModeRef.current) return;
       const next = candidateIndexRef.current + 1;
       const src = candidatesRef.current[next];
       if (src && playingRef.current) {
@@ -197,6 +196,30 @@ export function StoryReader() {
         setActiveVideoSrc(src);
         return;
       }
+
+      const mp3 = mp3SrcRef.current;
+      const visual = visualFallbackRef.current[0];
+      if (mp3 && playingRef.current && !audioRef.current) {
+        mp3ModeRef.current = true;
+        const audio = createTrackedAudio("story");
+        audio.preload = "auto";
+        audio.volume = Math.max(0.45, getVoiceVolume());
+        audio.src = mp3;
+        audioRef.current = audio;
+        audio.onended = () => finish();
+        audio.onerror = () => {
+          setStatus(t.stories.voiceUnavailable);
+          finish();
+        };
+        setStoryWithAudio(false);
+        if (visual && visual !== activeVideoSrc) setActiveVideoSrc(visual);
+        void audio.play().catch(() => {
+          setStatus(t.stories.voiceUnavailable);
+          finish();
+        });
+        return;
+      }
+
       setStatus(t.stories.voiceUnavailable);
       finish();
     };
@@ -208,15 +231,19 @@ export function StoryReader() {
         requestAnimationFrame(start);
         return;
       }
-      v.muted = false;
-      v.defaultMuted = false;
+      const useMp3 = mp3ModeRef.current;
+      v.muted = useMp3;
+      v.defaultMuted = useMp3;
+      v.loop = useMp3;
       v.volume = Math.max(0.45, getVoiceVolume());
       if (v.getAttribute("src") !== activeVideoSrc) {
         v.src = activeVideoSrc;
       }
       v.addEventListener("ended", onEnded);
       v.addEventListener("error", onError);
-      void v.play().catch(onError);
+      void v.play().catch(() => {
+        if (!useMp3) onError();
+      });
     };
 
     start();
