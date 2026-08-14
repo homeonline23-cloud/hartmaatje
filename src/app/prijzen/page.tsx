@@ -24,7 +24,7 @@ export default function PrijzenPage() {
           <div className="mx-auto w-full max-w-lg">
             <StoryVideoPlayer
               src={businessMedia.videoSrc}
-              coverImage="/hartmaatje-cover.png"
+              coverImage="/images/business-growth-poster.jpg"
               ariaLabel={p.title}
               playLabel={t.media.storyPlay}
             />
