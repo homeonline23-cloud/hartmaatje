@@ -44,8 +44,8 @@ function companionVideoPaths(
   lang: AppLang
 ): string[] {
   return [
-    `/stories/${storyId}/${lang}/${companionId}.mp4`,
     companionStoryDubPath(storyId, companionId, lang),
+    `/stories/${storyId}/${lang}/${companionId}.mp4`,
   ];
 }
 
