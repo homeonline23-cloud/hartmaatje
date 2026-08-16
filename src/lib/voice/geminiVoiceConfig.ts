@@ -11,6 +11,9 @@ type GeminiVoiceProfile = {
   playbackRate: number;
   personaNl: string;
   personaEn: string;
+  personaFr?: string;
+  personaDe?: string;
+  personaEs?: string;
 };
 
 const PROFILES: Record<VoiceIdentityId, GeminiVoiceProfile> = {
@@ -45,6 +48,12 @@ const PROFILES: Record<VoiceIdentityId, GeminiVoiceProfile> = {
       "Peter — warme, diepe mannenstem van een volwassen man rond zestig. Lage bariton, rustig en gelijkwaardig — dezelfde zware, warme klank als in zijn welkomstvideo. Geen lichte of hoge stem. Praat langzaam en natuurlijk, met korte adempauzes.",
     personaEn:
       "Peter — warm, deep male voice of a mature man in his late fifties or early sixties. Low baritone, calm and equal — the same heavy, warm tone as in his welcome video. Not light or high-pitched. Speak slowly and naturally, with gentle pauses.",
+    personaFr:
+      "Peter — voix masculine chaleureuse et profonde. Baryton calme, posé et égal. Parlez lentement et naturellement, avec de courtes pauses.",
+    personaDe:
+      "Peter — warme, tiefe Männerstimme. Ruhiges Bass-Bariton, gleichmäßig und ausgeglichen. Langsam und natürlich sprechen, mit kurzen Pausen.",
+    personaEs:
+      "Peter — voz masculina cálida y profunda. Barítono tranquilo e igualado. Hablar despacio y con naturalidad, con pausas breves.",
   },
 };
 
@@ -60,13 +69,25 @@ export function getGeminiVoicePrompt(
   const profile = PROFILES[identityId] ?? PROFILES.fenna;
   const voiceStyle = getProductionVoiceStyle(identityId, lang);
   const persona =
-    lang === "en"
-      ? `${profile.personaEn} Style: ${voiceStyle}.`
-      : `${profile.personaNl} Stijl: ${voiceStyle}.`;
+    lang === "nl"
+      ? `${profile.personaNl} Stijl: ${voiceStyle}.`
+      : lang === "fr"
+        ? `${profile.personaFr ?? profile.personaEn} Style: ${voiceStyle}.`
+        : lang === "de"
+          ? `${profile.personaDe ?? profile.personaEn} Stil: ${voiceStyle}.`
+          : lang === "es"
+            ? `${profile.personaEs ?? profile.personaEn} Estilo: ${voiceStyle}.`
+            : `${profile.personaEn} Style: ${voiceStyle}.`;
   const lead =
-    lang === "en"
-      ? `Read aloud in one natural flow (${persona}):\n\n`
-      : `Lees hardop voor in één natuurlijke flow (${persona}):\n\n`;
+    lang === "nl"
+      ? `Lees hardop voor in één natuurlijke flow (${persona}):\n\n`
+      : lang === "fr"
+        ? `Lisez à voix haute dans un flux naturel (${persona}):\n\n`
+        : lang === "de"
+          ? `Lesen Sie laut in einem natürlichen Fluss vor (${persona}):\n\n`
+          : lang === "es"
+            ? `Lea en voz alta en un flujo natural (${persona}):\n\n`
+            : `Read aloud in one natural flow (${persona}):\n\n`;
   return {
     voiceName: profile.voiceName,
     prompt: `${lead}${text}`,
