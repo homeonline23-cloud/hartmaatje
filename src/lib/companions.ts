@@ -29,7 +29,7 @@ export const companions: readonly Companion[] = [
     name: "Peter",
     portrait: "/avatars/peter/portrait.png?v=2",
     welcomeVideo: "/avatars/peter/welcome.mp4?v=2",
-    portraitCrop: { scale: "scale-[1.05]", position: "object-[50%_16%]" },
+    portraitCrop: { scale: "scale-[1.05]", position: "object-[50%_22%]" },
   },
   {
     id: "colette",
