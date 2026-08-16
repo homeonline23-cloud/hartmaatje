@@ -45,15 +45,15 @@ const PROFILES: Record<VoiceIdentityId, GeminiVoiceProfile> = {
     voiceName: "Algenib",
     playbackRate: 0.86,
     personaNl:
-      "Peter — warme, diepe mannenstem van een volwassen man rond zestig. Lage bariton, rustig en gelijkwaardig — dezelfde zware, warme klank als in zijn welkomstvideo. Geen lichte of hoge stem. Praat langzaam en natuurlijk, met korte adempauzes.",
+      "Peter — diepe, warme mannenstem van een volwassen man rond zestig. Spreek met oprechte zachtheid en gevoel, alsof elk woord van binnenuit komt — rustig, zorgzaam en vol menselijkheid. Niet formeel of vlak, maar zoals iemand die echt meeleeft. Praat traag en natuurlijk, met zachte adempauzes vol warmte.",
     personaEn:
-      "Peter — warm, deep male voice of a mature man in his late fifties or early sixties. Low baritone, calm and equal — the same heavy, warm tone as in his welcome video. Not light or high-pitched. Speak slowly and naturally, with gentle pauses.",
+      "Peter — deep, warm male voice of a mature man in his sixties. Speak with genuine gentleness and emotion, as if every word comes from the heart — calm, caring and full of humanity. Not flat or formal, but like someone who truly feels what he says. Speak slowly and naturally, with warm, gentle pauses full of feeling.",
     personaFr:
-      "Peter — voix masculine chaleureuse et profonde. Baryton calme, posé et égal. Parlez lentement et naturellement, avec de courtes pauses.",
+      "Peter — voix masculine profonde et chaleureuse. Parlez avec une vraie douceur et de l'émotion, comme si chaque mot venait du cœur — calme, bienveillant et plein d'humanité. Pas formel ou plat, mais comme quelqu'un qui ressent vraiment ce qu'il dit. Parlez lentement et naturellement, avec de douces pauses.",
     personaDe:
-      "Peter — warme, tiefe Männerstimme. Ruhiges Bass-Bariton, gleichmäßig und ausgeglichen. Langsam und natürlich sprechen, mit kurzen Pausen.",
+      "Peter — tiefe, warme Männerstimme. Sprechen Sie mit echter Sanftheit und Gefühl, als käme jedes Wort von Herzen — ruhig, fürsorglich und voller Menschlichkeit. Nicht formal oder flach, sondern wie jemand, der wirklich fühlt, was er sagt. Langsam und natürlich sprechen, mit warmen Pausen.",
     personaEs:
-      "Peter — voz masculina cálida y profunda. Barítono tranquilo e igualado. Hablar despacio y con naturalidad, con pausas breves.",
+      "Peter — voz masculina profunda y cálida. Hablar con genuina suavidad y emoción, como si cada palabra viniera del corazón — tranquilo, cariñoso y lleno de humanidad. No formal ni plano, sino como alguien que realmente siente lo que dice. Hablar despacio y con naturalidad, con pausas cálidas.",
   },
 };
 
