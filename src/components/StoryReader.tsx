@@ -120,7 +120,6 @@ export function StoryReader() {
     };
     window.addEventListener("keydown", onType);
     return () => window.removeEventListener("keydown", onType);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -134,7 +133,6 @@ export function StoryReader() {
   // Changing language / companion / story while playing stops audio
   useEffect(() => {
     if (playingRef.current) stopReading();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, companionId, storyId]);
 
   const selectStory = (id: StoryId) => {
@@ -322,14 +320,14 @@ export function StoryReader() {
                     : "border border-[#e8dfd0] bg-white/75 text-[#3f6339] hover:bg-white"
                 }`}
               >
-                <div className="relative mx-auto h-12 w-12 overflow-hidden rounded-full bg-[#e8dfd0] ring-2 ring-white/80 shadow-sm sm:h-14 sm:w-14">
+                <div className="relative mx-auto h-16 w-16 overflow-hidden rounded-full bg-[#e8dfd0] ring-2 ring-white/80 shadow-sm sm:h-20 sm:w-20">
                   <Image
                     src={c.portrait}
                     alt=""
                     fill
                     unoptimized
                     className={`object-cover ${crop?.scale ?? ""} ${crop?.position ?? ""}`}
-                    sizes="56px"
+                    sizes="80px"
                   />
                 </div>
                 <span className="mt-1 block text-center text-xs font-bold sm:text-sm">
