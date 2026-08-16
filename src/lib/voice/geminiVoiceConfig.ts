@@ -41,9 +41,9 @@ const PROFILES: Record<VoiceIdentityId, GeminiVoiceProfile> = {
     personaEn: "Maarten — calm male voice. Trustworthy and patient.",
   },
   peter: {
-    // Algenib = gravelly male — dieper en zwaarder dan Fenrir/Charon (past bij Peter in de video).
-    voiceName: "Algenib",
-    playbackRate: 0.86,
+    // Achernar = soft male — warm and gentle, fitting Peter's emotional character.
+    voiceName: "Achernar",
+    playbackRate: 0.88,
     personaNl:
       "Peter — diepe, warme mannenstem van een volwassen man rond zestig. Spreek met oprechte zachtheid en gevoel, alsof elk woord van binnenuit komt — rustig, zorgzaam en vol menselijkheid. Niet formeel of vlak, maar zoals iemand die echt meeleeft. Praat traag en natuurlijk, met zachte adempauzes vol warmte.",
     personaEn:
