@@ -27,7 +27,7 @@ export const companions: readonly Companion[] = [
   {
     id: "peter",
     name: "Peter",
-    portrait: "/avatars/peter/portrait.png?v=2",
+    portrait: "/avatars/peter/portrait.png?v=3",
     welcomeVideo: "/avatars/peter/welcome.mp4?v=2",
   },
   {

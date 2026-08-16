@@ -73,7 +73,7 @@ export function LiveCompanionFace({
     portrait?.trim() || `/avatars/${companionId}/portrait.png`;
   const cropClass = portraitCrop
     ? `${portraitCrop.scale} ${portraitCrop.position} object-cover`
-    : "object-cover object-[center_18%]";
+    : "object-cover object-[center_30%]";
   const frameSize = expanded
     ? "max-h-[min(78vh,46rem)] max-w-5xl"
     : compact
