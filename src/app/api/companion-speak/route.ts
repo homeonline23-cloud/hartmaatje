@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
-import { friendlyGeminiErrorMessage, isGeminiQuotaError } from "@/lib/geminiErrors";
+import { isGeminiQuotaError } from "@/lib/geminiErrors";
 import type { AppLang } from "@/lib/languages";
 import { isAppLang } from "@/lib/languages";
 import { jsonApiError } from "@/lib/server/rateLimitResponse";

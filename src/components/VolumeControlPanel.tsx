@@ -12,10 +12,11 @@ import {
 /** Voice-volume slider — compact on settings. */
 export function VolumeControlPanel({ compact = false }: { compact?: boolean }) {
   const { lang, t } = useI18n();
-  const [volume, setVolume] = useState(0.85);
+  const [volume, setVolume] = useState(() =>
+    typeof window !== "undefined" ? getVoiceVolume() : 0.85,
+  );
 
   useEffect(() => {
-    setVolume(getVoiceVolume());
     const onChange = (e: Event) => {
       const detail = (e as CustomEvent<number>).detail;
       if (typeof detail === "number") setVolume(detail);

@@ -21,7 +21,7 @@ const FENNA_VOICE = { identityId: "fenna" as const, playbackRate: 0.92 };
 
 export function FennaChatbox() {
   const { copy, app, lang } = useLanguage();
-  const [messages, setMessages] = useState<FennaMessage[]>([]);
+  const [messages, setMessages] = useState<FennaMessage[]>(() => loadFennaMessages());
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -35,10 +35,6 @@ export function FennaChatbox() {
   const streamRef = useRef<MediaStream | null>(null);
   const listEndRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<FennaMessage[]>([]);
-
-  useEffect(() => {
-    setMessages(loadFennaMessages());
-  }, []);
 
   useEffect(() => {
     messagesRef.current = messages;

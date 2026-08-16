@@ -19,18 +19,13 @@ export function VideoCaptionOverlay({
   cues,
   fallbackHint,
 }: Props) {
-  const [text, setText] = useState("");
   const [time, setTime] = useState(0);
 
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
 
-    const tick = () => {
-      const t = el.currentTime || 0;
-      setTime(t);
-      setText(activeCaptionText(cues, t));
-    };
+    const tick = () => setTime(el.currentTime || 0);
 
     tick();
     el.addEventListener("timeupdate", tick);
@@ -43,10 +38,8 @@ export function VideoCaptionOverlay({
     };
   }, [videoRef, cues]);
 
-  // Recompute when cues change at same time (language switch)
-  useEffect(() => {
-    setText(activeCaptionText(cues, time));
-  }, [cues, time]);
+  // Derived during render — no extra state or effect needed.
+  const text = activeCaptionText(cues, time);
 
   if (!text && !fallbackHint) return null;
 

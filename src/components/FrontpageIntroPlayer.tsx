@@ -29,10 +29,9 @@ export function FrontpageIntroPlayer() {
       video.defaultMuted = true;
     }
     return () => {
-      const el = videoRef.current;
-      if (!el) return;
-      el.pause();
-      el.muted = true;
+      if (!video) return;
+      video.pause();
+      video.muted = true;
     };
   }, []);
 

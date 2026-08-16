@@ -36,7 +36,7 @@ import {
   realtimeWsUrl,
 } from "@/lib/realtimeClient";
 import { isBlockedRealtimeTranscript, isLikelyGarbageStt, isWhisperHallucination, sanitizeUserTranscript } from "@/lib/whisperHallucination";
-import { getCompanionIntro, normalizeCompanionId } from "@/lib/companionKnowledge";
+import { getCompanionIntro } from "@/lib/companionKnowledge";
 
 export type HmEvent = {
   type: string;
@@ -1378,7 +1378,7 @@ export function useVoiceSession(companionId: CompanionId) {
       clearTranscriptFallbackTimer();
       clearReplySafetyTimer();
 
-      const capture = await startPcmCapture(micStream, (pcm, rms, _meta) => {
+      const capture = await startPcmCapture(micStream, (pcm, rms) => {
         if (!voiceLiveRef.current || pcmMutedRef.current) return;
         const wsLive = realtimeWsRef.current;
         if (!wsLive || wsLive.readyState !== WebSocket.OPEN) return;
@@ -1476,10 +1476,10 @@ export function useVoiceSession(companionId: CompanionId) {
     clearReplySafetyTimer,
     clearTranscriptFallbackTimer,
     ensureSession,
-    ensureUserBubble,
     handleRealtimeEvent,
     interruptAi,
     requestCompanionReply,
+    sendRealtime,
     stopPlayback,
     stopVoiceRealtime,
   ]);

@@ -120,7 +120,6 @@ export function StoryReader() {
     };
     window.addEventListener("keydown", onType);
     return () => window.removeEventListener("keydown", onType);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -134,7 +133,6 @@ export function StoryReader() {
   // Changing language / companion / story while playing stops audio
   useEffect(() => {
     if (playingRef.current) stopReading();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, companionId, storyId]);
 
   const selectStory = (id: StoryId) => {

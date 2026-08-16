@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { AvatarPortrait } from "@/components/AvatarPortrait";
 import { WelcomeVideoFrame } from "@/components/WelcomeVideoFrame";
@@ -29,16 +29,16 @@ export function CharacterLiveWelcome({
   const character = getVoiceIdentity(identityId);
   const videoSrc = getWelcomeVideoUrl(identityId);
   const videoCrop = getWelcomeVideoCrop(identityId);
-  const [welcomeFinished, setWelcomeFinished] = useState(false);
-
-  useEffect(() => {
-    setWelcomeFinished(false);
-  }, [identityId, playNonce, open]);
+  // Track which "session" (identityId+playNonce+open combo) has been completed.
+  // When deps change, the key changes and welcomeFinished auto-resets to false.
+  const sessionKey = `${identityId}-${playNonce}-${String(open)}`;
+  const [completedKey, setCompletedKey] = useState("");
+  const welcomeFinished = completedKey === sessionKey;
 
   const finishWelcome = useCallback(() => {
-    setWelcomeFinished(true);
+    setCompletedKey(sessionKey);
     onWelcomeComplete();
-  }, [onWelcomeComplete]);
+  }, [onWelcomeComplete, sessionKey]);
 
   const close = useCallback(() => {
     stopHartMaatjeSpeech();

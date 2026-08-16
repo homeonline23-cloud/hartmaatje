@@ -87,6 +87,7 @@ async function speakReply(text) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function handleUserMessage(text) {
   const trimmed = text.trim();
   if (!trimmed || !state.sessionId) return;

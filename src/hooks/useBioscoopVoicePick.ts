@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toBcp47, type AppLang } from "@/i18n/config";
 import { resolveApiBase } from "@/lib/apiHost";
 import { ContinuousListener } from "@/lib/continuousListener";
@@ -66,9 +66,11 @@ export function useBioscoopVoicePick(
   const listenerRef = useRef<ContinuousListener | null>(null);
   const liveRef = useRef(false);
   const onWishRef = useRef(onWish);
-  onWishRef.current = onWish;
   const langRef = useRef(lang);
-  langRef.current = lang;
+  useLayoutEffect(() => {
+    onWishRef.current = onWish;
+    langRef.current = lang;
+  });
   const failuresRef = useRef(0);
   /** Bumped by stop()/start() so a stale async step (mic-release delay,
    * getUserMedia prompt, in-flight transcription) can detect it was

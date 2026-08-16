@@ -61,6 +61,7 @@ export function CompanionWelcomeIntro({
 
   useEffect(() => {
     finishedRef.current = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVideoFailed(false);
     try {
       window.speechSynthesis?.cancel();

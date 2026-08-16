@@ -145,7 +145,7 @@ export function shouldCreateEpisode(userMessage: string): boolean {
 export function buildEpisode(
   residentId: string,
   userMessage: string,
-  lang: AppLang,
+  _lang: AppLang,
 ): EpisodicMemory | null {
   if (!shouldCreateEpisode(userMessage)) return null;
 

@@ -78,6 +78,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     try {
       const q = new URLSearchParams(window.location.search).get("lang");
       if (isAppLang(q)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLangState(q);
         persistLang(q);
         setReady(true);

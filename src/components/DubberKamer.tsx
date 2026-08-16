@@ -40,7 +40,7 @@ function defaultTargets(source: AppLang): AppLang[] {
 }
 
 export function DubberKamer() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const d = t.dubber;
   const fileRef = useRef<HTMLInputElement>(null);
 

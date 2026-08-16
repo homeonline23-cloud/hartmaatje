@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CompanionVoiceSession } from "@/components/CompanionVoiceSession";
 import { HomeCharacterPortraits } from "@/components/HomeCharacterPortraits";
 import { useHomeCompanion } from "@/context/HomeCompanionContext";
@@ -10,18 +10,17 @@ import type { VoiceIdentityId } from "@/lib/voice/types";
 export function HomeCharacterLanding() {
   const { copy, lang } = useLanguage();
   const { sessionKey } = useHomeCompanion();
-  const [picked, setPicked] = useState<VoiceIdentityId | null>(null);
-
-  useEffect(() => {
-    setPicked(null);
-  }, [sessionKey]);
+  // Track which sessionKey was active when a character was picked so the pick
+  // auto-clears when sessionKey changes (new session), without a setState-in-effect.
+  const [pickedEntry, setPickedEntry] = useState<{ key: number; id: VoiceIdentityId } | null>(null);
+  const picked = pickedEntry?.key === sessionKey ? pickedEntry.id : null;
 
   if (picked) {
     return (
       <CompanionVoiceSession
-        key={`${picked}-${sessionKey}`}
-        identityId={picked}
-        onBack={() => setPicked(null)}
+          key={`${picked}-${sessionKey}`}
+          identityId={picked}
+          onBack={() => setPickedEntry(null)}
       />
     );
   }
@@ -39,7 +38,7 @@ export function HomeCharacterLanding() {
             : "Tik op een portret om uw gesprek te beginnen."}
         </p>
 
-        <HomeCharacterPortraits onPick={(id) => setPicked(id)} />
+        <HomeCharacterPortraits onPick={(id) => setPickedEntry({ key: sessionKey as number, id })} />
 
         <div className="space-y-2 text-center">
           <p className="text-xl font-semibold leading-snug text-[#4a6741]">
