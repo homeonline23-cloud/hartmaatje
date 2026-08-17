@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { companions, type CompanionId } from "@/lib/companions";
 import { STORIES, type StoryId } from "@/lib/stories";
+import { getStoryText } from "@/lib/storyText";
 import { APP_LANGS, type AppLang } from "@/i18n/config";
 import { BackToSettingsLink } from "@/components/BackToSettingsLink";
 import { useI18n } from "@/i18n/LanguageProvider";
@@ -440,6 +442,201 @@ export function DubberKamer() {
         <p className="text-center text-sm leading-snug text-[#3f6339]/80">
           {d.hint}
         </p>
+      </div>
+
+      {/* Direct MP3 upload — separate from the dubbing pipeline */}
+      <DirectMp3Upload />
+    </div>
+  );
+}
+
+function DirectMp3Upload() {
+  const { t, lang } = useI18n();
+  const d = t.dubber;
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const [file, setFile] = useState<File | null>(null);
+  const [storyId, setStoryId] = useState<StoryId>(
+    PLAYABLE_STORIES[0]?.id ?? "sweet-dreams-do-come-true"
+  );
+  const [companion, setCompanion] = useState<CompanionId>("peter");
+  const [uploadLang, setUploadLang] = useState<AppLang>("nl");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
+  const upload = async () => {
+    if (!file) {
+      setMsg(d.directNeedFile);
+      setIsError(true);
+      return;
+    }
+    setBusy(true);
+    setMsg(null);
+    setIsError(false);
+    try {
+      const form = new FormData();
+      form.append("story_id", storyId);
+      form.append("companion", companion);
+      form.append("lang", uploadLang);
+      form.append("file", file);
+      const res = await fetch("/api/stories/upload-audio", {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          typeof data?.detail === "string" ? data.detail : d.directFail
+        );
+      }
+      setMsg(d.directOk);
+      setIsError(false);
+      setFile(null);
+      if (fileRef.current) fileRef.current.value = "";
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : d.directFail);
+      setIsError(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="border-t border-[#e8dfd0]/55 px-4 py-4 sm:px-5 sm:py-5">
+      <h3 className="text-lg font-bold text-[#3f6339]">{d.directTitle}</h3>
+      <p className="mt-0.5 text-sm text-[#3f6339]/80">{d.directSubtitle}</p>
+
+      <div className="mt-4 space-y-3">
+        {/* Story */}
+        <label className="block">
+          <span className="mb-1 block text-sm font-bold text-[#3f6339]">
+            {d.saveStoryPick}
+          </span>
+          <select
+            className="w-full rounded-xl border-2 border-[#e8dfd0] bg-white px-3 py-2.5 text-base font-semibold text-[#3f6339]"
+            value={storyId}
+            disabled={busy}
+            onChange={(e) => setStoryId(e.target.value as StoryId)}
+          >
+            {PLAYABLE_STORIES.map((s) => {
+              const row = getStoryText(s, lang);
+              return (
+                <option key={s.id} value={s.id}>
+                  {row.title}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+
+        {/* Companion */}
+        <fieldset disabled={busy}>
+          <legend className="mb-1 text-sm font-bold text-[#3f6339]">
+            {d.pickCompanion}
+          </legend>
+          <div className="grid grid-cols-4 gap-1.5">
+            {companions.map((c) => {
+              const active = companion === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCompanion(c.id)}
+                  className={`flex flex-col items-center gap-1 rounded-xl border-2 px-1 py-2 text-xs font-bold transition ${
+                    active
+                      ? "border-[#3f6339] bg-[#3f6339] text-white"
+                      : "border-[#e8dfd0] bg-white/80 text-[#3f6339] hover:bg-white"
+                  }`}
+                >
+                  <div className="relative h-10 w-10 overflow-hidden rounded-full bg-[#e8dfd0]">
+                    <Image
+                      src={c.portrait}
+                      alt=""
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      sizes="40px"
+                    />
+                  </div>
+                  <span>{c.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {/* Language */}
+        <label className="block">
+          <span className="mb-1 block text-sm font-bold text-[#3f6339]">
+            {d.directLang}
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {APP_LANGS.map((code) => {
+              const active = uploadLang === code;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setUploadLang(code)}
+                  className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold ${
+                    active
+                      ? "border-[#3f6339] bg-[#3f6339] text-white"
+                      : "border-[#e8dfd0] bg-white text-[#3f6339]"
+                  }`}
+                >
+                  {code.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+        </label>
+
+        {/* File */}
+        <label className="block">
+          <span className="mb-1 block text-sm font-bold text-[#3f6339]">
+            {d.directFile}
+          </span>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="audio/mp3,audio/mpeg,.mp3"
+            disabled={busy}
+            className="block w-full text-sm text-[#3f6339] file:mr-3 file:rounded-xl file:border-0 file:bg-[#3f6339] file:px-3 file:py-2 file:text-sm file:font-bold file:text-white"
+            onChange={(e) => {
+              setFile(e.target.files?.[0] ?? null);
+              setMsg(null);
+            }}
+          />
+          {file ? (
+            <p className="mt-1 text-sm text-[#3f6339]/70">
+              {file.name} ({Math.max(1, Math.round(file.size / (1024 * 1024)))}{" "}
+              MB)
+            </p>
+          ) : null}
+        </label>
+
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void upload()}
+          className="hm-dark w-full rounded-xl px-4 py-3 text-base font-bold shadow-md transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+        >
+          {busy ? d.directWorking : d.directBtn}
+        </button>
+
+        {msg ? (
+          <p
+            className={`rounded-xl px-3 py-2 text-sm font-semibold ${
+              isError
+                ? "bg-red-50 text-red-800"
+                : "bg-[#edf5e8] text-[#3f6339]"
+            }`}
+          >
+            {msg}
+          </p>
+        ) : null}
       </div>
     </div>
   );

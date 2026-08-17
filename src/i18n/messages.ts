@@ -63,6 +63,15 @@ export type Messages = {
     saveStoryWorking: string;
     saveStoryOk: string;
     saveStoryFail: string;
+    directTitle: string;
+    directSubtitle: string;
+    directFile: string;
+    directLang: string;
+    directBtn: string;
+    directWorking: string;
+    directOk: string;
+    directFail: string;
+    directNeedFile: string;
   };
   frontDesk: {
     aria: string;
@@ -305,6 +314,16 @@ const nl: Messages = {
     saveStoryWorking: "Opslaan…",
     saveStoryOk: "Opgeslagen. Open Verhalen kamer en kies dit maatje.",
     saveStoryFail: "Opslaan voor Verhalen mislukt.",
+    directTitle: "MP3 stem uploaden",
+    directSubtitle:
+      "Heb je een echte opname van een maatje? Upload de MP3 direct voor een verhaal.",
+    directFile: "Kies een MP3-bestand",
+    directLang: "Taal van de opname",
+    directBtn: "Upload voor Verhalen",
+    directWorking: "Uploaden…",
+    directOk: "Opgeslagen! Open Verhalen kamer en kies dit maatje.",
+    directFail: "Upload mislukt.",
+    directNeedFile: "Kies eerst een MP3-bestand.",
   },
   frontDesk: {
     aria: "Bel de balie",
@@ -569,6 +588,16 @@ const en: Messages = {
     saveStoryWorking: "Saving…",
     saveStoryOk: "Saved. Open Stories and pick this companion.",
     saveStoryFail: "Could not save for Stories.",
+    directTitle: "Upload MP3 voice",
+    directSubtitle:
+      "Have a real recording of a companion? Upload the MP3 directly for a story.",
+    directFile: "Choose an MP3 file",
+    directLang: "Language of the recording",
+    directBtn: "Upload for Stories",
+    directWorking: "Uploading…",
+    directOk: "Saved! Open the Stories room and pick this companion.",
+    directFail: "Upload failed.",
+    directNeedFile: "Please choose an MP3 file first.",
   },
   frontDesk: {
     aria: "Call the front desk",
@@ -831,6 +860,16 @@ const de: Messages = {
     saveStoryWorking: "Speichern…",
     saveStoryOk: "Gespeichert. Öffnen Sie den Geschichtenraum.",
     saveStoryFail: "Speichern für Geschichten fehlgeschlagen.",
+    directTitle: "MP3-Stimme hochladen",
+    directSubtitle:
+      "Haben Sie eine echte Aufnahme eines Begleiters? Laden Sie die MP3 direkt für eine Geschichte hoch.",
+    directFile: "MP3-Datei wählen",
+    directLang: "Sprache der Aufnahme",
+    directBtn: "Für Geschichten hochladen",
+    directWorking: "Hochladen…",
+    directOk: "Gespeichert! Öffnen Sie den Geschichtenraum.",
+    directFail: "Upload fehlgeschlagen.",
+    directNeedFile: "Bitte zuerst eine MP3-Datei wählen.",
   },
   frontDesk: {
     aria: "Rezeption anrufen",
@@ -1095,6 +1134,16 @@ const fr: Messages = {
     saveStoryWorking: "Enregistrement…",
     saveStoryOk: "Enregistré. Ouvrez la salle des histoires.",
     saveStoryFail: "Échec de l'enregistrement pour les histoires.",
+    directTitle: "Téléverser une voix MP3",
+    directSubtitle:
+      "Vous avez une vraie enregistrement d'un compagnon ? Téléversez le MP3 directement pour une histoire.",
+    directFile: "Choisir un fichier MP3",
+    directLang: "Langue de l'enregistrement",
+    directBtn: "Téléverser pour les histoires",
+    directWorking: "Téléversement…",
+    directOk: "Enregistré ! Ouvrez la salle des histoires.",
+    directFail: "Échec du téléversement.",
+    directNeedFile: "Choisissez d'abord un fichier MP3.",
   },
   frontDesk: {
     aria: "Appeler le bureau",
@@ -1360,6 +1409,16 @@ const es: Messages = {
     saveStoryWorking: "Guardando…",
     saveStoryOk: "Guardado. Abra la sala de historias.",
     saveStoryFail: "No se pudo guardar para historias.",
+    directTitle: "Subir voz MP3",
+    directSubtitle:
+      "¿Tiene una grabación real de un compañero? Suba el MP3 directamente para una historia.",
+    directFile: "Elegir un archivo MP3",
+    directLang: "Idioma de la grabación",
+    directBtn: "Subir para historias",
+    directWorking: "Subiendo…",
+    directOk: "¡Guardado! Abra la sala de historias.",
+    directFail: "Error al subir.",
+    directNeedFile: "Elija primero un archivo MP3.",
   },
   frontDesk: {
     aria: "Llamar a la recepción",
