@@ -8,7 +8,7 @@ import { STORIES, getStory, type StoryId } from "@/lib/stories";
 import { getStoryText } from "@/lib/storyText";
 import { getVoiceVolume } from "@/lib/voiceVolume";
 import { MEDIA_VERSION, companionStoryDubPath } from "@/lib/mediaByLang";
-import { createTrackedAudio, silenceHmMedia } from "@/lib/hmMedia";
+import { silenceHmMedia } from "@/lib/hmMedia";
 import { useI18n } from "@/i18n/LanguageProvider";
 import type { AppLang } from "@/i18n/config";
 
@@ -85,14 +85,21 @@ export function StoryReader() {
 
   const stopReading = () => {
     playingRef.current = false;
-    // Kill ALL story players (including orphaned Audio() after refresh)
-    silenceHmMedia("story");
     const a = audioRef.current;
     if (a) {
       a.onended = null;
       a.onerror = null;
+      try {
+        a.pause();
+        a.removeAttribute("src");
+        a.load();
+      } catch {
+        /* ignore */
+      }
       audioRef.current = null;
     }
+    // Also clear any orphaned story audio tracked in the global registry
+    silenceHmMedia("story");
     const v = videoRef.current;
     if (v) {
       v.pause();
@@ -125,8 +132,20 @@ export function StoryReader() {
   useEffect(() => {
     return () => {
       playingRef.current = false;
-      silenceHmMedia("story");
+      const a = audioRef.current;
+      if (a) {
+        a.onended = null;
+        a.onerror = null;
+        try {
+          a.pause();
+          a.removeAttribute("src");
+          a.load();
+        } catch {
+          /* ignore */
+        }
+      }
       audioRef.current = null;
+      silenceHmMedia("story");
     };
   }, []);
 
@@ -141,6 +160,7 @@ export function StoryReader() {
   };
 
   const readAloud = () => {
+    if (playingRef.current) return;
     if (!companionId || !companion) {
       setStatus(t.stories.pickCompanion);
       return;
@@ -162,7 +182,11 @@ export function StoryReader() {
       `/avatars/${companionId}/welcome.mp4`,
     ];
 
-    const audio = createTrackedAudio("story");
+    // Do NOT register in the global hmMedia registry — any silenceHmMedia("story")
+    // call would immediately call .load() on a loading element and cause
+    // net::ERR_ABORTED before the audio has a chance to play.
+    // Cleanup is handled directly by stopReading() and the unmount effect.
+    const audio = new Audio();
     audio.preload = "auto";
     audio.volume = Math.max(0.45, getVoiceVolume());
     audio.src = mp3;
