@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!client) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSession(null);
       setAuthLoading(false);
       return;
@@ -122,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!session?.user?.id || !client) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProfile(null);
       return;
     }

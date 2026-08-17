@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import {
   hartmaatjeGreenButtonClass,
-  hartmaatjeGreenOverlayClass,
   hartmaatjeGreenSurfaceClass,
   hartmaatjePortraitRingClass,
 } from "@/lib/hartmaatjeTheme";

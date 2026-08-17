@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/LanguageProvider";
 import {
@@ -26,18 +26,15 @@ export function FrontDeskSettingsModal({
   onSaveNumber,
 }: Props) {
   const { t } = useI18n();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const [isSaved, setIsSaved] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Load the stored number/room once we're open on the client (avoids SSR mismatch).
   useEffect(() => {
     if (!isOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhoneNumber(getFrontDeskNumber() ?? "");
     setRoomNumber(getFrontDeskRoom() ?? "");
   }, [isOpen]);

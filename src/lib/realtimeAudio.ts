@@ -153,47 +153,6 @@ export type PcmCaptureHandle = {
   context: AudioContext;
 };
 
-function emitPcmFrame(
-  samples: Float32Array,
-  inRate: number,
-  trackLabel: string,
-  logFrames: number,
-  onPcm: (
-    pcm16: ArrayBuffer,
-    rms: number,
-    meta: { silent: boolean }
-  ) => void
-): number {
-  let sum = 0;
-  for (let i = 0; i < samples.length; i++) {
-    const v = samples[i]!;
-    sum += v * v;
-  }
-  const floatRms = Math.sqrt(sum / Math.max(1, samples.length));
-  const displayRms = Math.min(100, floatRms * 220);
-  const silent = floatRms < 0.0015;
-  const pcm16 = floatTo16BitPCM(prepareMicSamplesForUplink(samples));
-
-  const next = logFrames + 1;
-  if (next <= 3 || next % 100 === 0) {
-    console.log("[hm-pcm]", {
-      nativeRate: inRate,
-      outRate: REALTIME_INPUT_SAMPLE_RATE,
-      samples: samples.length,
-      bytes: pcm16.byteLength,
-      floatRms: Math.round(floatRms * 1000) / 1000,
-      silent,
-      resampler:
-        inRate === REALTIME_INPUT_SAMPLE_RATE
-          ? "direct"
-          : "OfflineAudioContext",
-      track: trackLabel,
-    });
-  }
-
-  onPcm(pcm16, displayRms, { silent });
-  return next;
-}
 
 /**
  * Mic → 24 kHz Int16 mono PCM for `input_audio_buffer.append`.

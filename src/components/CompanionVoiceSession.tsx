@@ -36,7 +36,6 @@ import { logVoiceTranscriptLine, voiceLog } from "@/lib/fenna-voice/voiceLogger"
 import {
   beginCompanionVoiceSession,
   endCompanionVoiceSession,
-  getCompanionVoiceAbortSignal,
   isCompanionVoiceSessionActive,
 } from "@/lib/fenna-voice/sessionControl";
 import { friendlyGeminiErrorMessage, friendlyGeminiQuotaMessage, isApiErrorPayload } from "@/lib/geminiErrors";
@@ -106,7 +105,7 @@ export function CompanionVoiceSession({
   const phaseRef = useRef<Phase>("idle");
   const textOnlyRef = useRef(false);
 
-  function recoveryMessage(raw: string): string {
+  const recoveryMessage = useCallback((raw: string): string => {
     if (raw.includes("lang") || raw.includes("long") || raw.includes("te lang")) {
       return langRef.current === "en"
         ? "That took a moment — please speak again when you're ready."
@@ -120,7 +119,7 @@ export function CompanionVoiceSession({
     return langRef.current === "en"
       ? "Something went wrong — you can try speaking again."
       : "Er ging iets mis — u kunt het gerust nog eens proberen.";
-  }
+  }, []);
 
   function isRecoverableVoiceError(raw: string): boolean {
     return (
@@ -145,6 +144,7 @@ export function CompanionVoiceSession({
     listenerRef.current?.stop();
     listenerRef.current = null;
     sessionIdRef.current = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWelcomeOpen(!skipWelcome && hasWelcomeVideo(identityId));
     setPhase("idle");
     setSessionActive(false);
@@ -450,7 +450,7 @@ export function CompanionVoiceSession({
         setMicLive(true);
       }
     }
-  }, [addMessage, addPendingUserMessage, app.errors.speechServiceFailed, displayName, enableTextOnlyMode, removeMessage, updateMessage]);
+  }, [addMessage, addPendingUserMessage, app.errors.speechServiceFailed, displayName, enableTextOnlyMode, recoveryMessage, removeMessage, updateMessage]);
 
   const startSession = useCallback(async () => {
     setError(null);
@@ -584,7 +584,7 @@ export function CompanionVoiceSession({
       setSessionActive(false);
       sessionIdRef.current = null;
     }
-  }, [addMessage, app.errors.speechServiceFailed, displayName, enableTextOnlyMode, lang, onUtterance]);
+  }, [addMessage, displayName, enableTextOnlyMode, lang, onUtterance]);
 
   const endSession = useCallback(() => {
     endCompanionVoiceSession();

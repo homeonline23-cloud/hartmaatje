@@ -285,8 +285,6 @@ export class ContinuousListener {
     }
 
     const silenceDur = now - this.silenceStartedAt;
-    const maxSegmentReached = false;
-
     if (spokeMs < this.minSpeechMs) {
       if (silenceDur >= silenceNeededBeforeTurnEnd(spokeMs)) {
         voiceLog("short noise discarded");

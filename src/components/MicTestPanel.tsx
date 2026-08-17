@@ -58,6 +58,7 @@ export function MicTestPanel() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshPerm();
     const unsub = subscribeMicLock((ev) => {
       if (ev.reason === "voice_claim" || ev.reason === "force_stop") {

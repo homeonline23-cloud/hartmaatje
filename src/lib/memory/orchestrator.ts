@@ -1,6 +1,6 @@
 import type { AppLang } from "@/lib/languages";
 import { consolidateEpisodes, consolidateProfile } from "@/lib/memory/consolidate";
-import { appendEpisode, deleteEpisodes, loadEpisodes, saveEpisodes } from "@/lib/memory/episodicStore";
+import { deleteEpisodes, loadEpisodes, saveEpisodes } from "@/lib/memory/episodicStore";
 import {
   buildEpisode,
   extractProfileFacts,

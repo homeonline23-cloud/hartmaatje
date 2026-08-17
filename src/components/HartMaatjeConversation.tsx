@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useHomeCompanion } from "@/context/HomeCompanionContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -163,11 +163,13 @@ export function HartMaatjeConversation({
     const settings = profile
       ? resolveVoiceSettings(profile)
       : (loadLocalVoiceSettings() ?? resolveVoiceSettings(null));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVoiceIdentityId(settings.identityId);
   }, [initialIdentityId, profile, profile?.tts_preset_id, profile?.tts_playback_rate]);
 
   useEffect(() => {
     if (!initialIdentityId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVoiceIdentityId(initialIdentityId);
     startWelcome(hasWelcomeVideo(initialIdentityId));
   }, [initialIdentityId, startWelcome]);
@@ -369,9 +371,11 @@ export function HartMaatjeConversation({
     }
   };
 
-  onSendRef.current = (text?: string) => {
-    void onSend(text);
-  };
+  useLayoutEffect(() => {
+    onSendRef.current = (text?: string) => {
+      void onSend(text);
+    };
+  });
 
   const toggleMic = async () => {
     setError(null);

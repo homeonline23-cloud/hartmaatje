@@ -11,7 +11,6 @@ import type { CompanionPhase } from "@/components/CompanionPanel";
 import { clearGuestMessages } from "@/lib/guestChat";
 import { clearFennaMessages } from "@/lib/fennaChat";
 import type { NatureScene } from "@/lib/natureShowcase";
-import { stopFennaAudio } from "@/lib/fenna-voice/playback";
 import { endCompanionVoiceSession } from "@/lib/fenna-voice/sessionControl";
 import { stopHartMaatjeSpeech } from "@/lib/voice";
 

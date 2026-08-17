@@ -50,6 +50,7 @@ export function LanguageProvider({
     const saved = loadSavedAppLang();
     if (saved) {
       if (saved !== lang) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLangState(saved);
         saveAppLang(saved);
       }

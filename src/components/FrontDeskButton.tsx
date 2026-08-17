@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/LanguageProvider";
 import { getFrontDeskNumber, getFrontDeskRoom } from "@/lib/frontDeskNumber";
@@ -18,12 +18,8 @@ import { getFrontDeskNumber, getFrontDeskRoom } from "@/lib/frontDeskNumber";
 export function FrontDeskButton() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [room, setRoom] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) return;

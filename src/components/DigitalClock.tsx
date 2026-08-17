@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore, useState } from "react";
 import { useI18n } from "@/i18n/LanguageProvider";
 
 function pad(n: number) {
@@ -17,12 +17,12 @@ export function DigitalClock({
 }) {
   const { t } = useI18n();
   // Always start empty on server + first client paint to avoid locale/time hydration mismatches.
-  const [mounted, setMounted] = useState(false);
-  const [now, setNow] = useState(() => new Date(0));
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const [now, setNow] = useState(() =>
+    typeof window !== "undefined" ? new Date() : new Date(0),
+  );
 
   useEffect(() => {
-    setMounted(true);
-    setNow(new Date());
     const id = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(id);
   }, []);
