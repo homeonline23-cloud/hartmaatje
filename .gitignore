@@ -71,4 +71,4 @@ backend/.env
 # large media — deploy via scp/rsync, not git
 public/videos/*.mp4
 public/videos/stories/
-public/stories/
+# public/stories/ MP3 narrations are tracked so git pull deploys them
