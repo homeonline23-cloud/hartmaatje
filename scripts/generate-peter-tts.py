@@ -78,7 +78,7 @@ PERSONA = (
     "Lage bariton, rustig en gelijkwaardig. Praat langzaam en natuurlijk, met korte adempauzes."
 )
 VOICE_NAME = "Algenib"
-TTS_MODEL = "gemini-2.5-flash-preview-tts"
+TTS_MODEL = os.environ.get("GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts")
 OUTPUT_PATH = "/opt/hartmaatje/public/stories/magical-bakery/nl/peter.mp3"
 CHUNK_CHARS = 220
 
@@ -174,19 +174,21 @@ async def main():
     print(f"Story split into {len(chunks)} chunks. Generating TTS with Peter's voice ({VOICE_NAME})...")
 
     results = []
-    async with httpx.AsyncClient(timeout=60.0) as session:
+    async with httpx.AsyncClient(timeout=180.0) as session:
         for i, chunk in enumerate(chunks, 1):
-            result = await synthesize_chunk(session, chunk, i, len(chunks))
+            result = None
+            for attempt in range(3):
+                if attempt > 0:
+                    wait = 5 * attempt
+                    print(f"  Retry {attempt} for chunk {i} (wait {wait}s)...")
+                    await asyncio.sleep(wait)
+                result = await synthesize_chunk(session, chunk, i, len(chunks))
+                if result:
+                    break
             if result:
                 results.append(result)
             else:
-                # retry once
-                await asyncio.sleep(1)
-                result = await synthesize_chunk(session, chunk, i, len(chunks))
-                if result:
-                    results.append(result)
-                else:
-                    print(f"  SKIPPED chunk {i} after retry")
+                print(f"  SKIPPED chunk {i} after 3 attempts")
 
     if not results:
         print("ERROR: No audio generated.")
