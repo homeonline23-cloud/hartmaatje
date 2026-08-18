@@ -195,36 +195,60 @@ async def main():
         sys.exit(1)
 
     print(f"Combining {len(results)} audio chunks...")
-    pcm_parts = []
+
+    # Save each chunk to a temp file, then join with ffmpeg
+    chunk_files = []
     sample_rate = 24000
-    for raw, mime in results:
-        if "pcm" in mime or "L16" in mime:
+    for idx, (raw, mime) in enumerate(results):
+        chunk_path = f"/tmp/peter-chunk-{idx:03d}.wav"
+        if "pcm" in mime.lower() or "l16" in mime.lower():
             m = re.search(r"rate=(\d+)", mime)
             if m:
                 sample_rate = int(m.group(1))
-            pcm_parts.append(raw)
+            wav = pcm_to_wav(raw, sample_rate)
+            with open(chunk_path, "wb") as f:
+                f.write(wav)
         else:
-            pcm_parts.append(raw)
+            # Already encoded (mp3/wav) — let ffmpeg figure it out
+            raw_path = f"/tmp/peter-chunk-{idx:03d}.raw"
+            with open(raw_path, "wb") as f:
+                f.write(raw)
+            os.system(f'ffmpeg -i "{raw_path}" -ar 44100 -ac 1 "{chunk_path}" -y 2>/dev/null')
+            if not os.path.exists(chunk_path):
+                chunk_path = raw_path  # fallback: use raw
+        chunk_files.append(chunk_path)
 
-    combined_pcm = b"".join(pcm_parts)
-    wav_bytes = pcm_to_wav(combined_pcm, sample_rate)
-
-    # Save WAV then convert to MP3
-    wav_tmp = "/tmp/peter-magical-bakery.wav"
-    with open(wav_tmp, "wb") as f:
-        f.write(wav_bytes)
-    print(f"WAV saved ({len(wav_bytes)} bytes). Converting to MP3...")
+    # Write ffmpeg concat list
+    list_path = "/tmp/peter-chunks.txt"
+    with open(list_path, "w") as f:
+        for p in chunk_files:
+            f.write(f"file '{p}'\n")
 
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    print("Joining chunks and converting to MP3...")
     ret = os.system(
-        f'ffmpeg -i {wav_tmp} -codec:a libmp3lame -q:a 2 -map_metadata -1 "{OUTPUT_PATH}" -y 2>/dev/null'
+        f'ffmpeg -f concat -safe 0 -i {list_path} '
+        f'-codec:a libmp3lame -q:a 2 -map_metadata -1 "{OUTPUT_PATH}" -y 2>/dev/null'
     )
     if ret == 0:
         size = os.path.getsize(OUTPUT_PATH)
         print(f"\nDone! Saved to {OUTPUT_PATH} ({size // 1024} KB)")
         print("Open hartmaatje.app/verhalen, choose story 2, pick Peter, press Voorlees.")
     else:
-        print(f"ffmpeg failed. WAV is at {wav_tmp}")
+        print("ffmpeg concat failed. Trying direct WAV join fallback...")
+        combined = b"".join(r for r, m in results if "pcm" in m.lower() or "l16" in m.lower())
+        if combined:
+            wav_bytes = pcm_to_wav(combined, sample_rate)
+            wav_tmp = "/tmp/peter-magical-bakery-fallback.wav"
+            with open(wav_tmp, "wb") as f:
+                f.write(wav_bytes)
+            os.system(
+                f'ffmpeg -i {wav_tmp} -codec:a libmp3lame -q:a 2 -map_metadata -1 "{OUTPUT_PATH}" -y'
+            )
+            if os.path.exists(OUTPUT_PATH):
+                print(f"Done via fallback! {OUTPUT_PATH}")
+            else:
+                print("ERROR: both methods failed.")
 
 if __name__ == "__main__":
     asyncio.run(main())
